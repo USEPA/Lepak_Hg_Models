@@ -58,5 +58,8 @@ vignettes/*.pdf
 *.json
 *.html
 
+# Ignore python files
+*.ipynb
+
 desktop.ini
 README.html
