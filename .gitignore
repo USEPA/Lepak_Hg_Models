@@ -19,6 +19,7 @@
 
 # RStudio files
 .Rproj.user/
+*.Rproj
 
 # produced vignettes
 vignettes/*.html
@@ -37,3 +38,23 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Output
+/Tables/**
+/Model_Output/**
+/Data/**
+/Formatted_Data/**
+/Docs/**
+/Figures/**
+/Papers/**
+/Saved_Models/**
+/Slides/**
+/Weird_Data/**
+
+*.zip
+*.tsv
+*.csv
+*.rds
+*.json
+
+desktop.ini
