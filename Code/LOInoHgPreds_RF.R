@@ -1,4 +1,4 @@
-# LOI model without THg
+# LOI model without 9 GEOS-Chem predictors and THg
 
 # library(party) # 1.3-11 on VM
 # library(permimp) # permimp_1.0-2 
