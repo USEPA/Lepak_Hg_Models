@@ -60,6 +60,8 @@ vignettes/*.pdf
 
 # Ignore python files
 *.ipynb
+.ipynb_checkpoints/
+/Python/**
 
 desktop.ini
 README.html
