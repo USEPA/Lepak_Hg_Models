@@ -286,32 +286,11 @@ RFE_info$Iteration <- 1:nrow(RFE_info)
 RFE_info$NumVars <- rev(RFE_info$Iteration)
 RFE_info[(nrow(RFE_info)-9):nrow(RFE_info),]
 
-ggplot(RFE_info, aes(x=1:length(OOB_rmse), y=OOB_rmse)) + geom_line() + geom_point() + 
-  geom_hline(yintercept=min(RFE_info$OOB_rmse)) +
-  geom_line(aes(x=1:length(OOB_mae), y=OOB_mae), col="blue") +
-  geom_point(aes(x=1:length(OOB_mae), y=OOB_mae), col="blue") + 
-  geom_hline(yintercept=min(RFE_info$OOB_mae), col="blue")
-
 ggplot(RFE_info)+
   geom_line(aes(x=1:length(OOB_mae), y=OOB_bias), col="red") +
   geom_point(aes(x=1:length(OOB_mae), y=OOB_bias), col="red")+ 
   geom_hline(yintercept=0, col="red")
   
-# ggplot(RFE_info, aes(x=1:length(OOB_mae), y=OOB_mae)) + geom_line() + geom_point()
-ggplot(RFE_info, aes(x=1:length(OOB_mae), y=OOB_bias)) + geom_line() + geom_point()
-
-
-
-which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) # 102
-which(RFE_info$OOB_mae==min(RFE_info$OOB_mae)) # 102
-
-min(RFE_info$OOB_rmse) # 0.2471391
-
-RFE_info[which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) : nrow(RFE_info),]
-
-
-tail(VI.list[[1]], 10)
-tail(RFE_info, 10)
 
 # Plot OOB error
 RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_mae, label=Worst_Var)) + 
@@ -349,11 +328,29 @@ RFE_info_write <- RFE_info %>% arrange(NumVars)
 write.csv(RFE_info_write, "Model_Output/THg/THg_rf_RFE_info.csv", row.names = FALSE)
 
 
-
-# Do CV at each iteration to get SE
-
-# Do stratified partitioning by space though to get 
-# Rerun with THg/LOI% ??????????
+tail(VI.list[[1]], 10)
+tail(RFE_info, 10)
 
 
 
+
+
+##### Do CV for all models - use parallel computing with 10 cores #####
+
+# Do stratified partitioning by space
+
+# Need to do mean CV with standard error. Not standard error with OOB. So need to do for all.
+
+RFE_info_write <- read.csv("Model_Output/THg/THg_rf_RFE_info.csv")
+
+
+
+which(RFE_info_write$OOB_rmse==min(RFE_info_write$OOB_rmse)) # 24
+which(RFE_info_write$OOB_mae==min(RFE_info_write$OOB_mae)) # 24
+
+min(RFE_info_write$OOB_rmse) # 0.2471391
+
+min_preds <- RFE_info_write[1:which(RFE_info_write$OOB_rmse==min(RFE_info_write$OOB_rmse)),]
+
+
+dat_cv <- Train_Dat_run 
