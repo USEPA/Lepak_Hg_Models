@@ -78,7 +78,7 @@ Data %>% dplyr::select(Final_THg_preds$Variable)
 
 # Create 90-10 train-test split
 sort(table(Data$Omernik_II))
-# Sample 10% from each Omernik II greater than 5
+# Sample 10% from each Omernik II greater than 10
 
 # 36 lakes are missing THg or LOI (1 missing only LOI) - these could be used to help fill in predictor data though, and could predict values for these.
 
