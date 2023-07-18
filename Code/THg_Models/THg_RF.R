@@ -335,22 +335,6 @@ tail(RFE_info, 10)
 
 
 
-##### Do CV for all models - use parallel computing with 10 cores #####
-
-# Do stratified partitioning by space
-
-# Need to do mean CV with standard error. Not standard error with OOB. So need to do for all.
-
-RFE_info_write <- read.csv("Model_Output/THg/THg_rf_RFE_info.csv")
+##### Do CV for subset selection - see THg_RF_CV_Subset_Selection.R #####
 
 
-
-which(RFE_info_write$OOB_rmse==min(RFE_info_write$OOB_rmse)) # 24
-which(RFE_info_write$OOB_mae==min(RFE_info_write$OOB_mae)) # 24
-
-min(RFE_info_write$OOB_rmse) # 0.2471391
-
-min_preds <- RFE_info_write[1:which(RFE_info_write$OOB_rmse==min(RFE_info_write$OOB_rmse)),]
-
-
-dat_cv <- Train_Dat_run 

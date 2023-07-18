@@ -6,20 +6,22 @@ library(randomForest) # randomForest_4.7-1.1
 library(tidyverse) # tidyverse_1.3.2
 library(foreach)
 library(doParallel)
+library(pdp) # 0.8.1
+library(colorspace)
+
 
 # library(remotes)
-# install_version(
-#   "tidyverse",
-#   version = "1.3.2")
-# install_version(
-#   "randomForest",
-#   version = "4.7-1.1")
+# install_version( "tidyverse",version = "1.3.2")
+# install_version("randomForest", version = "4.7-1.1")
+# install_version("pdp", version = "0.8.1")
 
 output_dir <- "Model_Output/THg/"
 model_dir <- "Saved_Models/THg/"
 fig_dir <- "Figures/THg/"
 
 dir.create(paste0(output_dir, "CV"), showWarnings = F)
+dir.create(paste0(output_dir, "PDP"), showWarnings = F)
+dir.create(paste0(fig_dir, "PDP"), showWarnings = F)
 
 
 # Load imputed training and test data - does not contain ecoregion
@@ -127,14 +129,14 @@ sum(table(Lake_folds$folds)) # Should be 975
 
 
 ### Do 10-fold CV to estimate error
-# Need to do mean CV with standard error. Not standard error with OOB. So need to do for all iterations.
+
 # Train_Dat_run <- Train_Dat %>% dplyr::select(-NLA12_ID, -SMHG_ng_g, -STHG_ng_g) 
 # p <- ncol(Train_Dat_run)-1 # 125 preds - including LOI!!!
 
 
-## ********  Change this for different models  ******** ####
+## *****************  Change this for different models  ******************* ####
 response_var <- "log10THg"
-## * Also change mtry for different models
+## *****************  Also change RESPONSE AND MTRY in loop below!!!!!!!!!! **************
 
 # Vars to remove
 RFE_info <- read.csv(paste0(output_dir, "rf_RFE_info.csv"))
@@ -142,22 +144,11 @@ RFE_info$Iteration <- 1:nrow(RFE_info)
 RFE_info$NumVars <- rev(RFE_info$Iteration)
 
 
-
-# Try i=1
-# 15.15665 mins for i=105
-# 1.121855 hours for i=1
-
-# for(i in 1:nrow(RFE_info)){
-# Make loop a function
-# cv_function <- function(i=is, Train_Dat=Train_Dat, RFE_info=RFE_info,  Lake_folds=Lake_folds){
-
-
-
 # numCores <- detectCores()
 # numCores <- detectCores()-1
 # registerDoParallel(numCores)
 
-registerDoParallel(30)
+registerDoParallel(20) # 2.3 hr on server
 
 start.time <- Sys.time()
 
@@ -211,113 +202,314 @@ end.time-start.time
 # mclapply(i_s, cv_function, mc.cores = numCores)
 
 
-# Add QSAR code for calculating CV errors
+#### CV error estimates for RFE #####
+
+## ******* NEED TO CHANGE RESPONSE VARIABLE IN LOOP BELOW FOR OTHER RESPONSES!!!!! **********
+
+RFE_info <- read.csv(paste0(output_dir, "rf_RFE_info.csv"))
+RFE_info$Iteration <- 1:nrow(RFE_info)
+RFE_info$NumVars <- rev(RFE_info$Iteration)
+
+RFE_info$MeanCV_rmse <- RFE_info$MeanCV_mse <- RFE_info$MeanCV_mae <- RFE_info$MeanCV_bias <- NA
+RFE_info$SE_CV_rmse <- RFE_info$SE_CV_mse <- RFE_info$SE_CV_mae <- RFE_info$SE_CV_bias <- NA
+
+
+for(i in 1:nrow(RFE_info)){
+  
+  All_dat_Pred <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
+  
+  CV_Stats <- All_dat_Pred %>% group_by(Fold) %>% summarize(
+    MAE=mean(abs(log10THg-Pred)), 
+    RMSE=sqrt(mean((log10THg-Pred)^2)), 
+    MSE=mean((log10THg-Pred)^2),
+    Bias=mean(Pred-log10THg), 
+    n=n()) 
+  
+  RFE_info$MeanCV_rmse[i] <- mean(CV_Stats$RMSE)
+  RFE_info$MeanCV_mse[i] <- mean(CV_Stats$MSE)
+  RFE_info$MeanCV_mae[i] <- mean(CV_Stats$MAE)
+  RFE_info$MeanCV_bias[i] <- mean(CV_Stats$Bias)
+  
+  RFE_info$SE_CV_rmse[i] <- sd(CV_Stats$RMSE)/sqrt(max(All_dat_Pred$Fold))
+  RFE_info$SE_CV_mse[i] <- sd(CV_Stats$MSE)/sqrt(max(All_dat_Pred$Fold))
+  RFE_info$SE_CV_mae[i] <- sd(CV_Stats$MAE)/sqrt(max(All_dat_Pred$Fold))
+  RFE_info$SE_CV_bias[i] <- sd(CV_Stats$Bias)/sqrt(max(All_dat_Pred$Fold))
+  
+}
+
+
+write.csv(RFE_info, paste0(output_dir, "rf_RFE_info_wCVerrors.csv"), row.names = F)
+
+
+# MAE iteration with least variables that has error within 1 SE of min error
+min_it_mae <- which(RFE_info$MeanCV_mae==min(RFE_info$MeanCV_mae))
+best_it_mae <- max(which(RFE_info$MeanCV_mae <= RFE_info$MeanCV_mae[min_it_mae] + RFE_info$SE_CV_mae[min_it_mae]))
+# Remaining variables
+RFE_info$Worst_Var[best_it_mae:nrow(RFE_info)]
+
+RFE_info$Subset_MAE <- "Out"
+RFE_info$Subset_MAE[best_it_mae:nrow(RFE_info)] <- "In"
+RFE_info$Point_Col <- "Black"
+RFE_info$Point_Col[best_it_mae:nrow(RFE_info)] <- "firebrick3"
+
+RFE_info  %>% filter(NumVars %in% 1:50) %>% 
+  ggplot(aes(x=NumVars, y=MeanCV_mae, label=Worst_Var)) + 
+  geom_point(size=3, aes(col=Subset_MAE)) + 
+  geom_line(size=1.2) +
+  coord_cartesian(ylim=c(.15,.4)) +
+  geom_hline(yintercept=min(RFE_info$MeanCV_mae), size=1) +
+  geom_hline(yintercept=RFE_info$MeanCV_mae[min_it_mae] + RFE_info$SE_CV_mae[min_it_mae], lty=2, size=1) +
+  theme_minimal(base_size = 19) +
+  scale_x_continuous(breaks=seq(2,50,2)) +
+  annotate(geom = "text", x=rev(1:50), y=.40, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4, col=RFE_info$Point_Col[RFE_info$NumVars %in% 1:50]) +
+  ylab("CV MAE") + xlab("Number variables") + 
+  theme(legend.position="none") +
+  scale_color_manual(values = c("firebrick3", "Black"))
+ggsave(paste0(fig_dir, "/RFE_CV_MAE.png"), width=10, height=6)
+
+
+
+# RMSE iteration with least variables that has error within 1 SE of min error
+min_it_rmse <- which(RFE_info$MeanCV_rmse==min(RFE_info$MeanCV_rmse))
+# min_it_mse <- which(RFE_info$MeanCV_mse==min(RFE_info$MeanCV_mse)) # same
+best_it_rmse <- max(which(RFE_info$MeanCV_rmse <= RFE_info$MeanCV_rmse[min_it_rmse] + RFE_info$SE_CV_rmse[min_it_rmse]))
+# Remaining variables
+RFE_info$Worst_Var[best_it_rmse:nrow(RFE_info)]
+
+RFE_info$Subset_RMSE <- "Out"
+RFE_info$Subset_RMSE[best_it_rmse:nrow(RFE_info)] <- "In"
+RFE_info$Point_Col_rmse <- "Black"
+RFE_info$Point_Col_rmse[best_it_rmse:nrow(RFE_info)] <- "firebrick3"
+
+RFE_info  %>% filter(NumVars %in% 1:50) %>% 
+  ggplot(aes(x=NumVars, y=MeanCV_rmse, label=Worst_Var)) + 
+  geom_point(size=3, aes(col=Subset_RMSE)) + 
+  geom_line(size=1.2) +
+  coord_cartesian(ylim=c(.25,.5)) +
+  geom_hline(yintercept=min(RFE_info$MeanCV_rmse), size=1) +
+  geom_hline(yintercept=RFE_info$MeanCV_rmse[min_it_mae] + RFE_info$SE_CV_rmse[min_it_mae], lty=2, size=1) +
+  theme_minimal(base_size = 19) +
+  scale_x_continuous(breaks=seq(2,50,2)) +
+  annotate(geom = "text", x=rev(1:50), y=.50, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4, col=RFE_info$Point_Col_rmse[RFE_info$NumVars %in% 1:50]) +
+  ylab("CV RMSE") + xlab("Number variables") + 
+  theme(legend.position="none") +
+  scale_color_manual(values = c("firebrick3", "Black"))
+ggsave(paste0(fig_dir, "/RFE_CV_RMSE.png"), width=10, height=6)
+
+
+# Plot OOB error with new CV error - almost the same
+# RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=MeanCV_mae, label=Worst_Var)) + 
+#   geom_point(size=3, col="red") + 
+#   geom_line(size=1.2, col="red") +
+#   geom_point(aes(x=NumVars, y=OOB_mae), col="black", size=3) + 
+#   coord_cartesian(ylim=c(.15,.4)) +
+#   geom_hline(yintercept=min(RFE_info$OOB_mae), col="black") +
+#   geom_hline(yintercept=min(RFE_info$MeanCV_mae), col="red") +
+#   theme_minimal(base_size = 19) +
+#   scale_x_continuous(breaks=seq(2,50,2)) +
+#   annotate(geom = "text", x=rev(1:50), y=.40, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
+#   ylab("CV MAE") + xlab("Number variables") +
+#   geom_errorbar(aes(ymin=MeanCV_mae-SE_CV_mae, ymax=MeanCV_mae+SE_CV_mae), width=.2, col="red")
+
+
+# Bias
+RFE_info  %>% filter(NumVars %in% 1:50) %>% 
+  ggplot(aes(x=NumVars, y=MeanCV_bias, label=Worst_Var)) + 
+    geom_point(size=4) + 
+    geom_line(size=1.2) +
+    geom_hline(yintercept=0, lty=2, col="black", size=1.2) +
+    coord_cartesian(ylim=c(-.004,.008)) +
+    theme_minimal(base_size = 19) +
+  scale_x_continuous(breaks=seq(2,50,2)) +
+  annotate(geom = "text", x=rev(1:50), y=.008, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
+  ylab("CV Mean Bias") + xlab("Number variables") 
+ggsave(paste0(fig_dir, "/RFE_CV_Bias.png"), width=10, height=6)
+
+# Tends to over-predict THg, but hardly
+
+# Visualize errors of best MAE model 
+i <- best_it_mae
+Top_MAE_Mod <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
+
+Top_MAE_Mod %>% ggplot(aes(x=log10THg, y=Pred)) +
+  geom_abline(intercept=0, slope=1, color="black", size=1.1) +
+  geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
+  geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
+  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  geom_point(size=2) +
+  theme_minimal() +
+  coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
+  theme(text=element_text(size=20)) +
+  xlab("Observed log10THg") + ylab("Predicted log10THg")
+ggsave(paste0(fig_dir, "/Best_MAE_CVPred_vs_Obs.png"), width=10, height=6)
+
+
+# Visualize errors of best RMSE model 
+i <- best_it_rmse
+Top_RMSE_Mod <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
+
+Top_RMSE_Mod %>% ggplot(aes(x=log10THg, y=Pred)) +
+  geom_abline(intercept=0, slope=1, color="black", size=1.1) +
+  geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
+  geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
+  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  geom_point(size=2) +
+  theme_minimal() +
+  coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
+  theme(text=element_text(size=20)) +
+  xlab("Observed log10THg") + ylab("Predicted log10THg")
+
+# Using MAE has more variables and more bias
+# Using RMSE has fewer variables and least bias but higher variance
+# summary(lm(Top_MAE_Mod$Pred~Top_MAE_Mod$log10THg)) # 0.1861 
+# summary(lm(Top_RMSE_Mod$Pred~Top_RMSE_Mod$log10THg)) # 0.1881 
 
 
 
 
 
+# Then REFIT FINAL MODEL to all training data, test on holdout test set, do PDPs ####
+
+# Do  with best MAE model
+# Using MAE instead of RMSE because more conservative in retaining predictors than RMSE and tracks with initial visual assessment
+
+# MAE iteration with least variables that has error within 1 SE of min error
+min_it_mae <- which(RFE_info$MeanCV_mae==min(RFE_info$MeanCV_mae))
+best_it_mae <- max(which(RFE_info$MeanCV_mae <= RFE_info$MeanCV_mae[min_it_mae] + RFE_info$SE_CV_mae[min_it_mae]))
+
+# Remaining variables
+RFE_info$Worst_Var[best_it_mae:nrow(RFE_info)]
+final.preds <- c(RFE_info$Worst_Var[best_it_mae:nrow(RFE_info)])
+
+Train_run <- Train_Dat[, colnames(Train_Dat) %in% c(final.preds, response_var, "NLA12_ID")]
+
+nump <- ncol(Train_run)-2    # Number predictors (subtracting response, NLA12_ID)
+
+# Fit final model  
+set.seed(73) 
+rf.final  <- randomForest(log10THg ~ ., data=Train_run, 
+                      mtry=max(floor(nump/2), 1), 
+                      ntree=5000,
+                      nodesize=1,
+                      keep.forest=T,
+                      keep.inbag = F,
+                      importance=T)
+
+# saveRDS(rf.final, paste0(model_dir, "rf_full_mtryHalf_ntree5000_node1_sd36_FINAL_SUBSET.rds"))
+rf.final <- readRDS(paste0(model_dir, "rf_full_mtryHalf_ntree5000_node1_sd36_FINAL_SUBSET.rds"))
+
+
+# Predict test set
+rf_predict_Test <- predict(rf.final, newdata=Test_Dat)
+
+# Add predictions to Test set and write out
+Test_Dat <- Test_Dat %>% mutate(Pred = rf_predict_Test)
+
+write.csv(Test_Dat, paste0(output_dir, "Test_Final_Mod_Preds.csv"), row.names = F)
 
 
 
+Test_Errors <- Test_Dat  %>% summarize(
+  MAE=mean(abs(log10THg-Pred)), 
+  RMSE=sqrt(mean((log10THg-Pred)^2)), 
+  # MSE=mean((log10THg-Pred)^2),
+  Bias=mean(Pred-log10THg)) 
+#         MAE      RMSE        Bias
+#   0.1736518 0.2296981  0.04114562
+
+# Compare to CV error
+CV_Errors <- RFE_info[best_it_mae,] %>% dplyr::select(MeanCV_mae, MeanCV_rmse, MeanCV_bias) %>% rename(MAE=MeanCV_mae, RMSE=MeanCV_rmse, Bias=MeanCV_bias)
+OOB_Errors <- RFE_info[best_it_mae,] %>% dplyr::select(OOB_mae, OOB_rmse   , OOB_bias ) %>% rename(MAE=OOB_mae, RMSE=OOB_rmse, Bias=OOB_bias)
+
+Errors <- rbind(Test_Errors, CV_Errors, OOB_Errors)
+Errors$Dataset <- c("Test_Set_101", "Train_CV_Select", "Train_Set_OOB")
+Errors <- Errors %>% relocate(Dataset)
+Errors_Exp <- Errors %>% mutate(MAE=10^MAE, RMSE=10^RMSE, Bias=10^Bias) # Fold-difference
+write.csv(Errors, paste0(output_dir, "Error_Table.csv"), row.names = F)
 
 
+# Visualize errors 
+Test_Dat %>% ggplot(aes(x=log10THg, y=Pred)) +
+  geom_abline(intercept=0, slope=1, color="black", size=1.1) +
+  geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
+  geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
+  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  geom_point(size=2) +
+  theme_minimal() +
+  coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
+  theme(text=element_text(size=20)) +
+  xlab("Observed log10THg") + ylab("Predicted log10THg")
+ggsave(paste0(fig_dir, "/Best_MAE_TEST_Pred_vs_Obs.png"), width=10, height=6)
 
 
+# Plot residuals spatially
+Test_Dat$Residual <- Test_Dat$log10THg - Test_Dat$Pred
+Top_MAE_Mod$Residual <- Top_MAE_Mod$log10THg - Top_MAE_Mod$Pred
 
 
-
-########### START HERE WITH RFE #############
-
-
+Train_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Train_Dat$NLA12_ID)
+Test_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Test_Dat$NLA12_ID)
 
 
-# RFE with unconditional permutation importance
+Test_Dat <- left_join(Test_Dat, Test_Geo)
+Top_MAE_Mod <- left_join(Top_MAE_Mod, Train_Geo)
 
-# # Pull out response and predictors
-# All_dat_preds_loop <- Train_Dat_run 
-# 
-# p <- ncol(Train_Dat_run)-1 # 
-# 
-# # Save OOB error, variable importance
-# VI.list <- NULL
-# var.list <- rep(NA,p)
-# 
-# OOB.rmse <- rep(NA,p)
-# OOB.mae <- rep(NA,p)
-# OOB.bias <- rep(NA,p)
-# 
-# train.rmse <- rep(NA,p)
-# train.mae <- rep(NA,p)
-# train.bias <- rep(NA,p)
-# 
-# 
-# 
-# start.time <- Sys.time()
-# 
-# for(i in 1:p){
-#   print(i)
-#   
-#   nump <- ncol(All_dat_preds_loop)-1 # Number predictors
-#   
-#   set.seed(13) 
-#   rf  <- randomForest(log10THg ~ ., data=All_dat_preds_loop, 
-#                       mtry=max(floor(nump/2), 1), 
-#                       ntree=5000,
-#                       nodesize=1,
-#                       keep.forest=F,
-#                       keep.inbag = F,
-#                       importance=F)
-#   
-#   rf.pred <- rf$predicted # OOB
-#   rf.pred.tr <- predict(rf, newdata=Train_Dat_run) # training
-#   
-#   # OOB error
-#   OOB.rmse[i] <- sqrt(mean((Train_Dat_run$log10THg-rf.pred)^2)) # OOB rmse
-#   OOB.mae[i] <- mean(abs(Train_Dat_run$log10THg-rf.pred)) # oob mae
-#   OOB.bias[i] <- mean(rf.pred-Train_Dat_run$log10THg) # oob bias
-#   
-#   # Training error
-#   train.rmse[i] <- sqrt(mean((Train_Dat_run$log10THg-rf.pred.tr)^2)) # training rmse
-#   train.mae[i] <- mean(abs(Train_Dat_run$log10THg-rf.pred.tr)) #  training mae
-#   train.bias[i] <- mean(rf.pred.tr-Train_Dat_run$log10THg) # training bias
-#   
-#   
-#   # rf_imp <- data.frame(Variable=row.names(rf$importance), Importance=rf$importance[,1])
-#   # row.names(rf_imp) <- NULL
-#   # rf_imp <- rf_imp %>% arrange(Importance)
-# 
-#   
-#   # VI.list[[i]] <- rf_imp
-#   # var.list[i] <- rf_imp$Variable[1] # Least informative variable to remove
-#   
-#   All_dat_preds_loop <- All_dat_preds_loop[,!colnames(All_dat_preds_loop)==var.list[i]] # remove variable
-#   
-#   rm(rf)
-# }
-# 
-# 
-# # RFE info needs to be saved before do the CV errors!
-# RFE_info <- data.frame(Worst_Var=var.list, OOB_rmse=OOB.rmse, OOB_mae=OOB.mae, OOB_bias=OOB.bias, Train_rmse=train.rmse, Train_mae=train.mae, Train_bias=train.bias)
-# # write.csv(RFE_info, "Model_Output/THg/rf_RFE_info.csv", row.names = FALSE)
-# 
-# end.time <- Sys.time()
-# end.time-start.time
-# 
-# 
-# RFE_info <- read.csv(paste0(output_dir, "rf_RFE_info.csv"))
-# 
-# RFE_info$Iteration <- 1:nrow(RFE_info)
-# RFE_info$NumVars <- rev(RFE_info$Iteration)
+# Spatial distribution of residuals
+# ggplot(Test_Dat, aes(col=Residual, x=LON_DD83, y=LAT_DD83)) + geom_point(size=2) + theme_minimal()
+
+ggplot(Top_MAE_Mod, aes(fill=Residual, x=LON_DD83, y=LAT_DD83)) + geom_point(size=3, col="gray70", shape=21) + theme_minimal() +
+  geom_point(data=Test_Dat, size=4, aes(fill=Residual, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
+  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T)
+ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space.png"), width=10, height=6)
+
+# ArmyRose, Earth, Fall, Geyser, TealRose, Temps, Tropic, PuOr, RdBu, RdGy, PiYG, PRGn, BrBG, RdYlBu,  Spectral, Zissou 1, Cividis, Roma
 
 
+##### Partial dependence ####
+
+final.preds <- rev(final.preds)
+
+# Single variable partial dependence plots
+for(i in 1:length(final.preds)){
+  partial1 <- partial(rf.final, pred.var=paste0(final.preds[i]), quantiles=T, probs=seq(0.05, 0.95, 0.05))
+  saveRDS(partial1, paste0(output_dir, "PDP/", paste0(final.preds[i]), "_PDP.rds"))
+  
+  autoplot(partial1, size=1.2) + theme_minimal() + xlab(paste0(final.preds[i])) + ylab("log10THg") +
+    theme(text=element_text(size=20))  #+
+    # scale_x_continuous(breaks=seq(-2,6,2)) #+
+  ggsave(paste0(fig_dir, "PDP/PDP_", final.preds[i], ".png"), width=7, height=5)
+}
+
+# partial1 <- partial(rf.final, pred.var=paste0(final.preds[i]), quantiles=T, probs=seq(0.05, 0.95, 0.1))
+
+# Two variable partial dependence plots (contours) to visualize interactions - takes a while to run
+cl <- makeCluster(5) 
+doParallel::registerDoParallel(cl)
+
+rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("LOI_PERCENT", "Ave_pH"), grid.resolution = 20, progress=TRUE, parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
+# increase grid.resolution for finer resolution contour plot (but will increase computation time)
+saveRDS(rf.2pd, paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
+
+doParallel::stopImplicitCluster()
+
+# rf.2pd <- readRDS(paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
 
 
+ # , palette="cividis"
+
+# q4 <- qualitative_hcl(20, palette = "Dark 3")
+q50 <- diverging_hcl(50, palette = "Blue-Red 3")
+
+plotPartial(rf.2pd, levelplot = TRUE, zlab = paste0(response_var), drape = TRUE,
+            col.regions = q50, rug=T, train=Train_run, contour=T, contour.color="gray50") 
 
 
+autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
+  theme_minimal() +
+  scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
+  theme(text=element_text(size=20)) 
+ggsave(paste0(fig_dir, "PDP/PDP_LOI_pH_PDP.png"), width=7, height=5)
 
-
-
-
-
-
+# Use contour=TRUE to add contour lines. Color palettes are: "viridis" (the default), "magma", "inferno", "plasma", and "cividis"
+# see help for autoplot.partial for more options
