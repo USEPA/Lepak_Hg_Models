@@ -1,4 +1,4 @@
-# THg model including LOI as PREDICTOR
+# THg/LOI model
 
 # library(party) # 1.3-11 on VM
 # library(permimp) # permimp_1.0-2 
@@ -15,15 +15,16 @@ library(colorspace)
 # install_version("randomForest", version = "4.7-1.1")
 # install_version("pdp", version = "0.8.1")
 
-output_dir <- "Model_Output/THg/"
-model_dir <- "Saved_Models/THg/"
-fig_dir <- "Figures/THg/"
+
+
+output_dir <- "Model_Output/THgLOI/"
+model_dir <- "Saved_Models/THgLOI/"
+fig_dir <- "Figures/THgLOI/"
 
 dir.create(paste0(output_dir, "CV"), showWarnings = F)
 dir.create(paste0(output_dir, "PDP"), showWarnings = F)
 dir.create(paste0(fig_dir, "PDP"), showWarnings = F)
 dir.create(paste0(fig_dir, "PDP/Bivariate"), showWarnings = F)
-
 
 # Load imputed training and test data - does not contain ecoregion
 Train_Dat <- read.csv("Formatted_Data/THg_MHg_Imputed_Training_Data.csv")
@@ -33,26 +34,26 @@ Test_Dat <- read.csv("Formatted_Data/THg_MHg_Imputed_Test_Data.csv")
 # Imputed_Preds <- read.csv("Tables/List_Imputed_Training_Preds_THg_MHg.csv")
 
 
-# log-transform THg for all modeling
-Train_Dat$log10THg <- log10(Train_Dat$STHG_ng_g)
-Test_Dat$log10THg <- log10(Test_Dat$STHG_ng_g)
 
-# Make LOI a percent (doesn't matter for this model, but need for THg/LOI model
+# Make LOI a percent
 Train_Dat$LOI_PERCENT <- Train_Dat$LOI_PERCENT/100
 Test_Dat$LOI_PERCENT <- Test_Dat$LOI_PERCENT/100
+
+# log-transform THg/LOI for all modeling
+Train_Dat$log10THgLOI <- log10(Train_Dat$STHG_ng_g/Train_Dat$LOI_PERCENT)
+Test_Dat$log10THgLOI <- log10(Test_Dat$STHG_ng_g/Test_Dat$LOI_PERCENT)
 
 
 ## *****************  Change this for different models  ******************* ####
 ## DO SEARCH/REPLACE!!!!!!!!!!!!!!!!!!!!
-response_var <- "log10THg"
-mtry_par <- 0.5
-# nodesize is 1 for all models
+response_var <- "log10THgLOI"
+mtry_par <- 0.15
 
 # Try tuning mtry and nodesize first at 5000 trees
-# grid_search <- read.csv("Tables/Grid_Search/THg_grid_srch.csv")
-# ggplot(grid_search, aes(x=mtry, y=OOB_error, col=nodesize))+geom_point()
-
-# Let's go with nodesize=1, mtry=.5*p
+# Let's go with nodesize=1, mtry=.15*p
+# Not going with nodesize=1, mtry=.1*p because kind of a weird jumpy outlier
+# And like that nodesize doesn't matter at mtry=0.15
+# Note with LOI, mtry=.5*p, probably to capture LOI!
 
 
 
@@ -134,9 +135,8 @@ sum(table(Lake_folds$folds)) # Should be 975
 
 ### Do 10-fold CV to estimate error
 
-# Train_Dat_run <- Train_Dat %>% dplyr::select(-NLA12_ID, -SMHG_ng_g, -STHG_ng_g) 
-# p <- ncol(Train_Dat_run)-1 # 125 preds - including LOI!!!
-
+# Train_Dat_run <- Train_Dat %>% dplyr::select(-NLA12_ID, -SMHG_ng_g, -STHG_ng_g, -LOI_PERCENT) 
+# p <- ncol(Train_Dat_run)-1 # 124 preds 
 
 
 ## *****************  Change RESPONSE in loop below!!!!!!!!!! **************
@@ -168,11 +168,11 @@ foreach(i = (1:nrow(RFE_info)), .packages=c('dplyr', 'randomForest')) %dopar% {
     TestLakes <- Lake_folds$NLA12_ID[which(Lake_folds$folds==j)]
     
     TrainData <- All_dat_preds_loop %>% filter(!NLA12_ID %in% TestLakes) %>% dplyr::select(-NLA12_ID)
-
+    
     TestData <- All_dat_preds_loop %>% filter(NLA12_ID %in% TestLakes)
     
     set.seed(73) 
-    rf  <- randomForest(log10THg ~ ., data=TrainData, 
+    rf  <- randomForest(log10THgLOI ~ ., data=TrainData, 
                         mtry=max(floor(mtry_par*nump), 1), 
                         ntree=5000,
                         nodesize=1,
@@ -188,10 +188,10 @@ foreach(i = (1:nrow(RFE_info)), .packages=c('dplyr', 'randomForest')) %dopar% {
     
   }
   
-
+  
   write.csv(All_dat_Pred, paste0(output_dir, "CV/CV_preds_Iter",i,".csv"), row.names = F)
   
-
+  
 }
 
 stopImplicitCluster()  
@@ -203,6 +203,8 @@ end.time-start.time
 
 # results <- mclapply(i_s, fx, mc.cores = numCores)
 # mclapply(i_s, cv_function, mc.cores = numCores)
+
+
 
 
 #### CV error estimates for RFE #####
@@ -222,10 +224,10 @@ for(i in 1:nrow(RFE_info)){
   All_dat_Pred <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
   
   CV_Stats <- All_dat_Pred %>% group_by(Fold) %>% summarize(
-    MAE=mean(abs(log10THg-Pred)), 
-    RMSE=sqrt(mean((log10THg-Pred)^2)), 
-    MSE=mean((log10THg-Pred)^2),
-    Bias=mean(Pred-log10THg), 
+    MAE=mean(abs(log10THgLOI-Pred)), 
+    RMSE=sqrt(mean((log10THgLOI-Pred)^2)), 
+    MSE=mean((log10THgLOI-Pred)^2),
+    Bias=mean(Pred-log10THgLOI), 
     n=n()) 
   
   RFE_info$MeanCV_rmse[i] <- mean(CV_Stats$RMSE)
@@ -318,23 +320,25 @@ ggsave(paste0(fig_dir, "/RFE_CV_RMSE.png"), width=10, height=6)
 # Bias
 RFE_info  %>% filter(NumVars %in% 1:50) %>% 
   ggplot(aes(x=NumVars, y=MeanCV_bias, label=Worst_Var)) + 
-    geom_point(size=4) + 
-    geom_line(size=1.2) +
-    geom_hline(yintercept=0, lty=2, col="black", size=1.2) +
-    coord_cartesian(ylim=c(-.004,.008)) +
-    theme_minimal(base_size = 19) +
+  geom_point(size=4) + 
+  geom_line(size=1.2) +
+  geom_hline(yintercept=0, lty=2, col="black", size=1.2) +
+  coord_cartesian(ylim=c(-.004,.008)) +
+  theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
   annotate(geom = "text", x=rev(1:50), y=.008, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
   ylab("CV Mean Bias") + xlab("Number variables") 
 ggsave(paste0(fig_dir, "/RFE_CV_Bias.png"), width=10, height=6)
 
-# Tends to over-predict THg, but hardly
+
+
+
 
 # Visualize errors of best MAE model 
 i <- best_it_mae
 Top_MAE_Mod <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
 
-Top_MAE_Mod %>% ggplot(aes(x=log10THg, y=Pred)) +
+Top_MAE_Mod %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
@@ -343,7 +347,7 @@ Top_MAE_Mod %>% ggplot(aes(x=log10THg, y=Pred)) +
   theme_minimal() +
   coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
   theme(text=element_text(size=20)) +
-  xlab("Observed log10THg") + ylab("Predicted log10THg")
+  xlab("Observed log10THgLOI") + ylab("Predicted log10THgLOI")
 ggsave(paste0(fig_dir, "/Best_MAE_CVPred_vs_Obs.png"), width=10, height=6)
 
 
@@ -351,7 +355,7 @@ ggsave(paste0(fig_dir, "/Best_MAE_CVPred_vs_Obs.png"), width=10, height=6)
 i <- best_it_rmse
 Top_RMSE_Mod <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
 
-Top_RMSE_Mod %>% ggplot(aes(x=log10THg, y=Pred)) +
+Top_RMSE_Mod %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
@@ -361,18 +365,21 @@ Top_RMSE_Mod %>% ggplot(aes(x=log10THg, y=Pred)) +
   theme_minimal() +
   coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
   theme(text=element_text(size=20)) +
-  xlab("Observed log10THg") + ylab("Predicted log10THg")
+  xlab("Observed log10THgLOI") + ylab("Predicted log10THgLOI")
 
 # Using MAE has more variables and more bias
 # Using RMSE has fewer variables and least bias but higher variance
-# summary(lm(Top_MAE_Mod$Pred~Top_MAE_Mod$log10THg)) # 0.1861 
-# summary(lm(Top_RMSE_Mod$Pred~Top_RMSE_Mod$log10THg)) # 0.1881 
+# summary(lm(Top_MAE_Mod$Pred~Top_MAE_Mod$log10THgLOI)) # 0.1861 
+# summary(lm(Top_RMSE_Mod$Pred~Top_RMSE_Mod$log10THgLOI)) # 0.1881 
 
 
 
 
 
 # Then REFIT FINAL MODEL to all training data, test on holdout test set, do PDPs ####
+
+##### ********** CHANGE RESPONSE IN FINAL MODEL FIT!!!!!! ****************** 
+
 
 # Do  with best MAE model
 # Using MAE instead of RMSE because more conservative in retaining predictors than RMSE and tracks with initial visual assessment
@@ -391,7 +398,7 @@ nump <- ncol(Train_run)-2    # Number predictors (subtracting response, NLA12_ID
 
 # Fit final model  
 set.seed(73) 
-rf.final  <- randomForest(log10THg ~ ., data=Train_run, 
+rf.final  <- randomForest(log10THgLOI ~ ., data=Train_run, 
                           mtry=max(floor(mtry_par*nump), 1), 
                           ntree=5000,
                           nodesize=1,
@@ -399,8 +406,9 @@ rf.final  <- randomForest(log10THg ~ ., data=Train_run,
                           keep.inbag = F,
                           importance=T)
 
-# saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
-rf.final <- readRDS(paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
+
+saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
+# rf.final <- readRDS(paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
 
 
 # Predict test set
@@ -414,10 +422,9 @@ write.csv(Test_Dat, paste0(output_dir, "Test_Final_Mod_Preds.csv"), row.names = 
 
 
 Test_Errors <- Test_Dat  %>% summarize(
-  MAE=mean(abs(log10THg-Pred)), 
-  RMSE=sqrt(mean((log10THg-Pred)^2)), 
-  # MSE=mean((log10THg-Pred)^2),
-  Bias=mean(Pred-log10THg)) 
+  MAE=mean(abs(log10THgLOI-Pred)), 
+  RMSE=sqrt(mean((log10THgLOI-Pred)^2)), 
+  Bias=mean(Pred-log10THgLOI)) 
 #         MAE      RMSE        Bias
 #   0.1736518 0.2296981  0.04114562
 
@@ -433,7 +440,7 @@ write.csv(Errors, paste0(output_dir, "Error_Table.csv"), row.names = F)
 
 
 # Visualize errors 
-Test_Dat %>% ggplot(aes(x=log10THg, y=Pred)) +
+Test_Dat %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
@@ -442,13 +449,13 @@ Test_Dat %>% ggplot(aes(x=log10THg, y=Pred)) +
   theme_minimal() +
   coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
   theme(text=element_text(size=20)) +
-  xlab("Observed log10THg") + ylab("Predicted log10THg")
+  xlab("Observed log10THgLOI") + ylab("Predicted log10THgLOI")
 ggsave(paste0(fig_dir, "/Best_MAE_TEST_Pred_vs_Obs.png"), width=10, height=6)
 
 
 # Plot residuals spatially
-Test_Dat$Residual <- Test_Dat$log10THg - Test_Dat$Pred
-Top_MAE_Mod$Residual <- Top_MAE_Mod$log10THg - Top_MAE_Mod$Pred
+Test_Dat$Residual <- Test_Dat$log10THgLOI - Test_Dat$Pred
+Top_MAE_Mod$Residual <- Top_MAE_Mod$log10THgLOI - Top_MAE_Mod$Pred
 
 
 Train_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Train_Dat$NLA12_ID)
@@ -478,9 +485,9 @@ for(i in 1:length(final.preds)){
   partial1 <- partial(rf.final, pred.var=paste0(final.preds[i]), quantiles=T, probs=seq(0.05, 0.95, 0.05))
   saveRDS(partial1, paste0(output_dir, "PDP/", paste0(final.preds[i]), "_PDP.rds"))
   
-  autoplot(partial1, size=1.2) + theme_minimal() + xlab(paste0(final.preds[i])) + ylab("log10THg") +
+  autoplot(partial1, size=1.2) + theme_minimal() + xlab(paste0(final.preds[i])) + ylab("log10THgLOI") +
     theme(text=element_text(size=20))  #+
-    # scale_x_continuous(breaks=seq(-2,6,2)) #+
+  # scale_x_continuous(breaks=seq(-2,6,2)) #+
   ggsave(paste0(fig_dir, "PDP/PDP_", final.preds[i], ".png"), width=7, height=5)
 }
 
@@ -492,10 +499,6 @@ for(i in 1:length(final.preds)){
 # Two variable partial dependence plots (contours) to visualize interactions 
 
 # Note: These are currently manually chosen, but could run all pairwise interactions
-
-# q50 <- diverging_hcl(50, palette = "Blue-Red 3")
-# plotPartial(rf.2pd, levelplot = TRUE, zlab = paste0(response_var), drape = TRUE,
-# col.regions = q50, rug=T, train=Train_run, contour=T, contour.color="gray50")
 
 cl <- makeCluster(5) 
 doParallel::registerDoParallel(cl)
@@ -527,3 +530,10 @@ autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
   theme(text=element_text(size=20))  +
   xlab("WetLossLS_Loss_soluble_spec_large_scale_precip")
 ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_WetLossLS_Runoff_PDP.png"), width=7, height=5)
+
+
+
+
+
+
+
