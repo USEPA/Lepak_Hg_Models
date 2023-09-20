@@ -3,7 +3,7 @@
 # library(party) # 1.3-11 on VM
 # library(permimp) # permimp_1.0-2 
 library(randomForest) # randomForest_4.7-1.1
-library(tidyverse) # tidyverse_1.3.2
+library(tidyverse) # tidyverse_2.0.0
 library(foreach)
 library(doParallel)
 library(pdp) # 0.8.1
@@ -11,7 +11,7 @@ library(colorspace)
 
 
 # library(remotes)
-# install_version( "tidyverse",version = "1.3.2")
+# install_version( "tidyverse",version = "2.0.0")
 # install_version("randomForest", version = "4.7-1.1")
 # install_version("pdp", version = "0.8.1")
 
@@ -412,7 +412,9 @@ Test_Dat <- Test_Dat %>% mutate(Pred = rf_predict_Test)
 write.csv(Test_Dat, paste0(output_dir, "Test_Final_Mod_Preds.csv"), row.names = F)
 
 
+### Compute Error tables ########
 
+# Compute errors on original log scale
 Test_Errors <- Test_Dat  %>% summarize(
   MAE=mean(abs(log10THg-Pred)), 
   RMSE=sqrt(mean((log10THg-Pred)^2)), 
@@ -430,6 +432,60 @@ Errors$Dataset <- c("Test_Set_101", "Train_CV_Select", "Train_Set_OOB")
 Errors <- Errors %>% relocate(Dataset)
 Errors_Exp <- Errors %>% mutate(MAE=10^MAE, RMSE=10^RMSE, Bias=10^Bias) # Fold-difference
 write.csv(Errors, paste0(output_dir, "Error_Table.csv"), row.names = F)
+
+
+
+
+# Compute relative errors
+
+# Naive test errors
+naive_pred <- mean(Train_Dat$log10THg)
+
+Naive_Test_Errors <- Test_Dat  %>% summarize(
+  Naive_MAE=mean(abs(log10THg-naive_pred)), 
+  Naive_RMSE=sqrt(mean((log10THg-naive_pred)^2))) 
+
+Relative_Test_Errors <- data.frame(RAE=Test_Errors$MAE/Naive_Test_Errors$Naive_MAE,
+                                   RRSE=Test_Errors$RMSE/Naive_Test_Errors$Naive_RMSE)
+
+
+# Naive CV errors
+All_dat_Pred_Naive <- NULL
+for(j in 1:max(Lake_folds$folds)){
+  print(paste("Iteration:", i, "out of", nrow(RFE_info), "... Fold", j))
+  TestLakes <- Lake_folds$NLA12_ID[which(Lake_folds$folds==j)]
+  TrainData <- Train_Dat %>% filter(!NLA12_ID %in% TestLakes) %>% dplyr::select(-NLA12_ID)
+  TestData <- Train_Dat %>% filter(NLA12_ID %in% TestLakes)
+  TestData <- TestData %>% mutate(Pred = mean(TrainData$log10THg), Fold=j)
+  All_dat_Pred_Naive <- rbind(All_dat_Pred_Naive, TestData)
+  
+}
+
+
+
+NaiveCV_Stats <- All_dat_Pred_Naive %>% group_by(Fold) %>% summarize(
+  MAE=mean(abs(log10THg-Pred)), 
+  RMSE=sqrt(mean((log10THg-Pred)^2)), 
+  MSE=mean((log10THg-Pred)^2),
+  Bias=mean(Pred-log10THg), 
+  n=n()) 
+
+Naive_MeanCV_mae <- mean(NaiveCV_Stats$MAE)
+Naive_MeanCV_rmse <- mean(NaiveCV_Stats$RMSE)
+
+Relative_CV_Errors <- data.frame(RAE=CV_Errors$MAE/Naive_MeanCV_mae,
+                                 RRSE=CV_Errors$RMSE/Naive_MeanCV_rmse)
+
+
+Relative_Errors <- rbind(Relative_Test_Errors, Relative_CV_Errors)
+Relative_Errors$Dataset <- c("Test_Set_101", "Train_CV_Select")
+Relative_Errors <- Relative_Errors %>% relocate(Dataset)
+write.csv(Relative_Errors, paste0(output_dir, "Relative_Error_Table.csv"), row.names = F)
+
+
+
+####################
+
 
 
 # Visualize errors 
@@ -472,6 +528,7 @@ ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space.png"), width=10, height=6)
 ##### Partial dependence ####
 
 final.preds <- rev(final.preds)
+cat(final.preds, sep = "\n")
 
 # Single variable partial dependence plots
 for(i in 1:length(final.preds)){
