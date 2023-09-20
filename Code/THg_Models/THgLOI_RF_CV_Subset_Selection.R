@@ -151,7 +151,7 @@ RFE_info$NumVars <- rev(RFE_info$Iteration)
 # numCores <- detectCores()-1
 # registerDoParallel(numCores)
 
-registerDoParallel(20) # 2.3 hr on server
+registerDoParallel(20) # 50 min on server
 
 start.time <- Sys.time()
 
@@ -323,7 +323,7 @@ RFE_info  %>% filter(NumVars %in% 1:50) %>%
   geom_point(size=4) + 
   geom_line(size=1.2) +
   geom_hline(yintercept=0, lty=2, col="black", size=1.2) +
-  coord_cartesian(ylim=c(-.004,.008)) +
+  coord_cartesian(ylim=c(-.006,.008)) +
   theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
   annotate(geom = "text", x=rev(1:50), y=.008, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
@@ -337,6 +337,8 @@ ggsave(paste0(fig_dir, "/RFE_CV_Bias.png"), width=10, height=6)
 # Visualize errors of best MAE model 
 i <- best_it_mae
 Top_MAE_Mod <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
+range(Top_MAE_Mod$Pred)
+range(Top_MAE_Mod$log10THgLOI)
 
 Top_MAE_Mod %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
@@ -345,7 +347,7 @@ Top_MAE_Mod %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
   geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  geom_point(size=2) +
   theme_minimal() +
-  coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
+  coord_cartesian(xlim=c(0.5,4.5), ylim=c(0.5,4.5))+
   theme(text=element_text(size=20)) +
   xlab("Observed log10THgLOI") + ylab("Predicted log10THgLOI")
 ggsave(paste0(fig_dir, "/Best_MAE_CVPred_vs_Obs.png"), width=10, height=6)
@@ -363,14 +365,10 @@ Top_RMSE_Mod %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
   geom_point(size=2) +
   theme_minimal() +
-  coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
+  coord_cartesian(xlim=c(0.5,4.5), ylim=c(0.5,4.5))+
   theme(text=element_text(size=20)) +
   xlab("Observed log10THgLOI") + ylab("Predicted log10THgLOI")
 
-# Using MAE has more variables and more bias
-# Using RMSE has fewer variables and least bias but higher variance
-# summary(lm(Top_MAE_Mod$Pred~Top_MAE_Mod$log10THgLOI)) # 0.1861 
-# summary(lm(Top_RMSE_Mod$Pred~Top_RMSE_Mod$log10THgLOI)) # 0.1881 
 
 
 
@@ -420,13 +418,15 @@ Test_Dat <- Test_Dat %>% mutate(Pred = rf_predict_Test)
 write.csv(Test_Dat, paste0(output_dir, "Test_Final_Mod_Preds.csv"), row.names = F)
 
 
+### Compute Error tables ########
 
+# Compute errors on original log scale
 Test_Errors <- Test_Dat  %>% summarize(
   MAE=mean(abs(log10THgLOI-Pred)), 
   RMSE=sqrt(mean((log10THgLOI-Pred)^2)), 
   Bias=mean(Pred-log10THgLOI)) 
 #         MAE      RMSE        Bias
-#   0.1736518 0.2296981  0.04114562
+#   0.1934608  0.240407  0.06316922
 
 # Compare to CV error
 CV_Errors <- RFE_info[best_it_mae,] %>% dplyr::select(MeanCV_mae, MeanCV_rmse, MeanCV_bias) %>% rename(MAE=MeanCV_mae, RMSE=MeanCV_rmse, Bias=MeanCV_bias)
@@ -439,6 +439,59 @@ Errors_Exp <- Errors %>% mutate(MAE=10^MAE, RMSE=10^RMSE, Bias=10^Bias) # Fold-d
 write.csv(Errors, paste0(output_dir, "Error_Table.csv"), row.names = F)
 
 
+
+# Compute relative errors
+
+# Naive test errors
+naive_pred <- mean(Train_Dat$log10THgLOI)
+
+Naive_Test_Errors <- Test_Dat  %>% summarize(
+  Naive_MAE=mean(abs(log10THgLOI-naive_pred)), 
+  Naive_RMSE=sqrt(mean((log10THgLOI-naive_pred)^2))) 
+
+Relative_Test_Errors <- data.frame(RAE=Test_Errors$MAE/Naive_Test_Errors$Naive_MAE,
+                                   RRSE=Test_Errors$RMSE/Naive_Test_Errors$Naive_RMSE)
+
+
+# Naive CV errors
+All_dat_Pred_Naive <- NULL
+for(j in 1:max(Lake_folds$folds)){
+  print(paste("Iteration:", i, "out of", nrow(RFE_info), "... Fold", j))
+  TestLakes <- Lake_folds$NLA12_ID[which(Lake_folds$folds==j)]
+  TrainData <- Train_Dat %>% filter(!NLA12_ID %in% TestLakes) %>% dplyr::select(-NLA12_ID)
+  TestData <- Train_Dat %>% filter(NLA12_ID %in% TestLakes)
+  TestData <- TestData %>% mutate(Pred = mean(TrainData$log10THgLOI), Fold=j)
+  All_dat_Pred_Naive <- rbind(All_dat_Pred_Naive, TestData)
+  
+}
+
+
+
+NaiveCV_Stats <- All_dat_Pred_Naive %>% group_by(Fold) %>% summarize(
+  MAE=mean(abs(log10THgLOI-Pred)), 
+  RMSE=sqrt(mean((log10THgLOI-Pred)^2)), 
+  MSE=mean((log10THgLOI-Pred)^2),
+  Bias=mean(Pred-log10THgLOI), 
+  n=n()) 
+
+Naive_MeanCV_mae <- mean(NaiveCV_Stats$MAE)
+Naive_MeanCV_rmse <- mean(NaiveCV_Stats$RMSE)
+
+Relative_CV_Errors <- data.frame(RAE=CV_Errors$MAE/Naive_MeanCV_mae,
+                                 RRSE=CV_Errors$RMSE/Naive_MeanCV_rmse)
+
+
+Relative_Errors <- rbind(Relative_Test_Errors, Relative_CV_Errors)
+Relative_Errors$Dataset <- c("Test_Set_101", "Train_CV_Select")
+Relative_Errors <- Relative_Errors %>% relocate(Dataset)
+write.csv(Relative_Errors, paste0(output_dir, "Relative_Error_Table.csv"), row.names = F)
+
+
+
+####################
+
+
+
 # Visualize errors 
 Test_Dat %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
@@ -447,7 +500,7 @@ Test_Dat %>% ggplot(aes(x=log10THgLOI, y=Pred)) +
   geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
   geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  geom_point(size=2) +
   theme_minimal() +
-  coord_cartesian(xlim=c(-1,5), ylim=c(-1,5))+
+  coord_cartesian(xlim=c(0.5,4.5), ylim=c(0.5,4.5))+
   theme(text=element_text(size=20)) +
   xlab("Observed log10THgLOI") + ylab("Predicted log10THgLOI")
 ggsave(paste0(fig_dir, "/Best_MAE_TEST_Pred_vs_Obs.png"), width=10, height=6)
@@ -479,6 +532,7 @@ ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space.png"), width=10, height=6)
 ##### Partial dependence ####
 
 final.preds <- rev(final.preds)
+cat(final.preds, sep = "\n")
 
 # Single variable partial dependence plots
 for(i in 1:length(final.preds)){
@@ -502,9 +556,9 @@ for(i in 1:length(final.preds)){
 
 cl <- makeCluster(5) 
 doParallel::registerDoParallel(cl)
-rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("LOI_PERCENT", "Ave_pH"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
+rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("Hg0DryDep", "ELEVATION"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
 # increase grid.resolution for finer resolution contour plot (but will increase computation time)
-saveRDS(rf.2pd, paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
+saveRDS(rf.2pd, paste0(output_dir, "PDP/Hg0DryDep_ELEVATION_PDP.rds"))
 doParallel::stopImplicitCluster()
 # rf.2pd <- readRDS(paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
 
@@ -512,24 +566,24 @@ autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
   theme_minimal() +
   scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
   theme(text=element_text(size=20))
-ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_LOI_pH_PDP.png"), width=7, height=5)
+ggsave(paste0(fig_dir, "PDP/Bivariate/Hg0DryDep_ELEVATION_pH_PDP.png"), width=7, height=5)
 
 
 
 cl <- makeCluster(5) 
 doParallel::registerDoParallel(cl)
-rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s", "RunoffCat"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
+rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("Precip8110Cat", "Gas_Hg_Hg0Conc_ng_m3"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
 # increase grid.resolution for finer resolution contour plot (but will increase computation time)
-saveRDS(rf.2pd, paste0(output_dir, "PDP/WetLossLS_Runoff_PDP.rds"))
+saveRDS(rf.2pd, paste0(output_dir, "PDP/Precip8110Cat_Gas_Hg_Hg0Conc_PDP.rds"))
 doParallel::stopImplicitCluster()
 # rf.2pd <- readRDS(paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
 
 autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
   theme_minimal() +
   scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
-  theme(text=element_text(size=20))  +
-  xlab("WetLossLS_Loss_soluble_spec_large_scale_precip")
-ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_WetLossLS_Runoff_PDP.png"), width=7, height=5)
+  theme(text=element_text(size=20))  #+
+  # xlab("Gas_Hg_Hg0Conc")
+ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_Precip8110Cat_Gas_Hg_Hg0Conc_PDP.png"), width=7, height=5)
 
 
 
