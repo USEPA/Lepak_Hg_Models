@@ -8,7 +8,7 @@ library(foreach)
 library(doParallel)
 library(pdp) # 0.8.1
 library(colorspace)
-
+library(vegan)
 
 # library(remotes)
 # install_version( "tidyverse",version = "1.3.2")
@@ -527,6 +527,19 @@ ggplot(Top_MAE_Mod, aes(fill=Residual, x=LON_DD83, y=LAT_DD83)) + geom_point(siz
 ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space.png"), width=10, height=6)
 
 # ArmyRose, Earth, Fall, Geyser, TealRose, Temps, Tropic, PuOr, RdBu, RdGy, PiYG, PRGn, BrBG, RdYlBu,  Spectral, Zissou 1, Cividis, Roma
+
+
+
+### Test spatial autocorrelation for final model
+CV_Resids <- Top_MAE_Mod %>% dplyr::select(Residual, LON_DD83, LAT_DD83)
+
+dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
+dist_res <- as.matrix(dist(CV_Resids$Residual))
+mantel_test <- mantel(dists, dist_res, permutations=1000)
+mantel_test$signif # r=0.07, p=.001 There is spatial autocorrelation in residuals
+
+
+
 
 
 ##### Partial dependence ####
