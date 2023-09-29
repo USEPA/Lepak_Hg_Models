@@ -292,42 +292,7 @@ Impute_dat_preds_TEST_FILLED$Gas_Hg_Hg0Conc_ng_m3[1:20]
 Impute_dat_wTEST$Gas_Hg_Hg0Conc_ng_m3[1:20]
 
 
-# 101 lakes for testing
+# 34 lakes for testing
 Imputed_Test_Set <- Impute_dat_preds_TEST_FILLED %>% filter(TrainTest=="Iso_Test") %>% dplyr::select(-TrainTest)
 write.csv(Imputed_Test_Set, "Formatted_Data/ISO_Imputed_Test_Data.csv", row.names = F)
 
-
-
-# # Write which vars imputed if different
-# Imp_Errors_Test <- data.frame(Variable=names(Impute_dat_preds_wTEST), Error=Pred_Imp_Mod_wTEST$OOBerror, Err_Type=names(Pred_Imp_Mod_wTEST$OOBerror))
-# 
-# Imputed_Vars_Test <- Imp_Errors_Test %>% filter(Error>0) %>% mutate(Impute="Y")
-# # Complete_Vars_Test <- Imp_Errors_Test %>% filter(Error==0) %>% mutate(Impute="N")
-# # write_Impute <- rbind(Imputed_Vars, Complete_Vars)
-# # write.csv(Imputed_Training_Set, "Tables/List_Imputed_Training_Preds_THg_MHg.csv", row.names = F)
-# 
-# # CHECK!!!
-# Imputed_Vars_Test$Variable %in% Imputed_Vars$Variable
-# Imputed_Vars$Variable %in% Imputed_Vars_Test$Variable
-# # Same imputed vars - so no need to write again
-
-
-
-
-
-# Remove lakes??
-
-
-# hist(Lakes_wTHg$Ave_CONDUCTIVITY_uS_cm)
-# 
-# # Number NAs by lake
-# Lake_NA <- data.frame(Lake=1:nrow(Lakes_wTHg))
-# 
-# for(i in 1:nrow(Lakes_wTHg)){
-#   Lake_NA$NumNA_Of128[i] <- sum(is.na(Lakes_wTHg[i,]))
-# }
-# 
-# sum(Lake_NA$NumNA_Of128>30)
-# table(Lake_NA$NumNA_Of128)
-# 
-# Lake_NA$NumNA_Of128
