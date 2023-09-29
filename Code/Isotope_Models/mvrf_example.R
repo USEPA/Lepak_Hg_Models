@@ -1,4 +1,8 @@
 library(randomForestSRC)
+library(colorspace)
+library(usmap)
+library(sp)
+library(tidyverse)
 
 # Multivariate forests can be specified in two ways:
 #   
@@ -48,6 +52,15 @@ Test_Dat <- read.csv("Formatted_Data/THg_MHg_Imputed_Test_Data.csv") # imputed w
 # All Data
 Data <- read_csv("Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv")
 
+Lake_Geo <- read_csv("Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv") %>% dplyr::select(NLA12_ID, LAT_DD83, LON_DD83, HUC2, HUC8, Omernik_I, Omernik_II, Omernik_III)
+
+sort(table(Lake_Geo$Omernik_II))
+ecoregions <- unique(Lake_Geo$Omernik_II)
+
+Test_Dat_wGeo <- left_join(Test_Dat, Lake_Geo)
+Train_Dat_wGeo <- left_join(Train_Dat, Lake_Geo)
+
+
 # Attach isotope data to Train and Test sets
 names(Data)
 Iso_Dat <- Data %>% dplyr::select(NLA12_ID, d202_Avg, D199_Avg, D200_Avg, D201_Avg, D204_Avg) %>% filter(!is.na(d202_Avg))
@@ -57,7 +70,42 @@ Iso_Dat <- Data %>% dplyr::select(NLA12_ID, d202_Avg, D199_Avg, D200_Avg, D201_A
 Train_Iso <- left_join(Train_Dat, Iso_Dat) %>% filter(!is.na(d202_Avg)) # 377
 Test_Iso <- left_join(Test_Dat, Iso_Dat) %>% filter(!is.na(d202_Avg)) # 33
 
+Train_Iso_wGeo <- left_join(Train_Iso, Lake_Geo)
+Test_Iso_wGeo <- left_join(Test_Iso, Lake_Geo)
+
 33/410 # 8% test data
+
+# Play around with colors
+ggplot(Train_Dat_wGeo, aes(fill=LOI_PERCENT, x=LON_DD83, y=LAT_DD83)) + geom_point(size=3, col="gray70", shape=21) + theme_minimal() +
+  geom_point(data=Test_Dat_wGeo, size=4, aes(fill=LOI_PERCENT, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
+  scale_fill_continuous_sequential(palette = "Batlow")
+
+ggplot(Test_Dat_wGeo, aes(fill=LOI_PERCENT, x=LON_DD83, y=LAT_DD83)) + geom_point(size=3, col="gray70", shape=21) + theme_minimal() +
+  scale_fill_continuous_sequential(palette = "Batlow")
+
+ggplot(Train_Iso_wGeo, aes(fill=LOI_PERCENT, x=LON_DD83, y=LAT_DD83)) + geom_point(size=3, col="gray70", shape=21) + theme_minimal() +
+  geom_point(data=Test_Iso_wGeo, size=4, aes(fill=LOI_PERCENT, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
+  scale_fill_continuous_sequential(palette = "Batlow")
+
+ggplot(Test_Iso_wGeo, aes(fill=LOI_PERCENT, x=LON_DD83, y=LAT_DD83)) + geom_point(size=3, col="gray70", shape=21) + theme_minimal() +
+  scale_fill_continuous_sequential(palette = "Batlow")
+
+# This code doesn't work yet
+test_iso_trans <- usmap_transform(data=Test_Iso_wGeo, input_names=c("LON_DD83", "LAT_DD83"))
+
+plot_usmap("states", exclude=c("Alaska", "Hawaii")) + 
+  geom_point(data = test_iso_trans, 
+             aes(x = x, y = y), 
+             color = "red",
+             size = 3)
+
+
+
+
+
+
+
+
 
 # Keep LOI, THg, MeHg, and GEOS-Chem
 Train_Dat_run <- Train_Iso %>% dplyr::select(-NLA12_ID, -D201_Avg, -D204_Avg) 
@@ -65,6 +113,9 @@ p <- ncol(Train_Dat_run)-3 # 125 preds - including LOI!!!
 p # 127
 ceiling(p/3)
 # 5 isotope response with LOI and GEOS-Chem preds
+
+
+# Need to standardize isotope values?
 
 # Use mtry=ceiling(p/3) for prelim run
 set.seed(3)
