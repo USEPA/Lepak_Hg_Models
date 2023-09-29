@@ -80,35 +80,76 @@
 -	Writes which variables were imputed: "Tables/List_Imputed_Training_Preds_THg_MHg.csv"
 
 
+#### Impute_NA_Iso.R
+- Similar to above but for isotope lakes
+-	Reads in "Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv" created from Select_Predictors.R
+    - Creates 90-10 train/test split, stratified sampling by Omernik II
+    - Test set includes only lakes with isotope data
+- Imputes missing values for predictor variables using missForest
+    - Uses iso training data plus lakes with missing THg and lakes without iso data
+    - INCLUDES THg, MeHg, LOI in imputation
+    - Excludes ID, isotopes from imputation.
+    - Possibly add lat/longs
+- Writes imputed training data: "Formatted_Data/ISO_Imputed_Training_Data.csv "
+- Writes imputed test data: "Formatted_Data/ISO_Imputed_Test_Data.csv"
+
+
+
 ### RF modeling scripts
 
-#### THg_noLOI_RF.R
+#### THg_Models/THg_noLOI_RF.R
 -	log(THg) model with RFE – exclude LOI as predictor
 
-#### THg_RF.R
+#### THg_Models/THg_RF.R
 -	log(THg) model with RFE – include LOI as predictor
 
-#### THgLOI_RF.R
--	log(THG/LOI) model
+#### THg_Models/THgLOI_RF.R
+-	log(THG/LOI) model with RFE
 
-#### MeHg_wTHgLOI_RF.R
+#### THg_Models/THg_RF_CV_Subset_Selection.R
+-	log(THg) model with subset selection – include LOI as predictor
+- Uses RFE output from THg_RF.R, adds CV errors to RFE
+- Selects best subset using 1-SE rule and MAE
+- Creates error tables, visualizations, PDPs
+
+#### THg_Models/THgLOI_RF_CV_Subset_Selection.R
+-	log(THG/LOI) model with subset selection
+- Uses RFE output from THgLOI_RF.R, adds CV errors to RFE
+- Selects best subset using 1-SE rule and MAE
+- Creates error tables, visualizations, PDPs
+
+
+#### MeHg_Models/MeHg_wTHgLOI_RF.R
 -	log(MeHg) model with THg and LOI as predictors
 
-#### MeHg_noTHgLOI_RF.R
+#### MeHg_Models/MeHg_noTHgLOI_RF.R
 -	log(MeHg) model without THg or LOI
 
-#### MeHgTHg_wLOI_RF.R
+#### MeHg_Models/MeHgTHg_wLOI_RF.R
 -	log(MeHg/THg) model with LOI
 
-#### MeHgTHg_noLOI_RF.R
+#### MeHg_Models/MeHgTHg_noLOI_RF.R
 -	log(MeHg/THg) model without LOI
 
-#### LOI_RF.R
+#### MeHg_Models/MeHg_wTHgLOI_RF_CV_Subset_Selection.R
+-	log(MeHg) model with THg and LOI as predictors with subset selection
+- Uses RFE output from MeHg_wTHgLOI_RF.R, adds CV errors to RFE
+- Selects best subset using 1-SE rule and MAE
+- Creates error tables, visualizations, PDPs
+
+#### MeHg_Models/MeHgTHg_wLOI_RF_CV_Subset_Selection.R
+-	log(MeHg/THg) model with LOI with subset selection
+- Uses RFE output from MeHgTHg_wLOI_RF.R, adds CV errors to RFE
+- Selects best subset using 1-SE rule and MAE
+- Creates error tables, visualizations, PDPs
+
+
+#### LOI_Models/LOI_RF.R
 -	log(LOI) model with all predictors (not THg)
 
-#### LOInoHgPreds_RF.R
+#### LOI_Models/LOInoHgPreds_RF.R
 -	log(LOI) model excluding 9 GEOS-Chem Hg predictors (and not THg)
 
-#### Compile_THg_MeHg_LOI_Model_Results.R
+#### Compilte_Results/Compile_THg_MeHg_LOI_Model_Results.R
 -	Code to compile results from above models and compare top predictors
 
