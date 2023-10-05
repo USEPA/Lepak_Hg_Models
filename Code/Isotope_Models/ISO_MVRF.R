@@ -476,17 +476,21 @@ ggplot(RFE_info)+
   geom_hline(yintercept=0, col="red")
 
 
+iso_colors <- c("D199" = "darkgreen", "D200" = "darkorange", "D202" = "blue", "Avg" = "black")
+
 # Plot OOB error
 RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_mae_Avg, label=Worst_Var)) +
-  geom_point(size=3) +
-  geom_line(size=1.2) +
+  geom_point(size=3, aes(col="Avg")) +
+  geom_line(size=1.2, aes(col="Avg")) +
   
-  geom_point(aes(y=OOB_mae_D199), col="darkgreen") +
-  geom_line(aes(y=OOB_mae_D199), col="darkgreen") +
-  geom_point(aes(y=OOB_mae_D200), col="darkorange") +
-  geom_line(aes(y=OOB_mae_D200), col="darkorange") +
-  geom_point(aes(y=OOB_mae_D202), col="blue") +
-  geom_line(aes(y=OOB_mae_D202), col="blue") +
+  geom_point(aes(y=OOB_mae_D199, col="D199")) +
+  geom_line(aes(y=OOB_mae_D199, col="D199")) +
+  geom_point(aes(y=OOB_mae_D200, col="D200")) +
+  geom_line(aes(y=OOB_mae_D200, col="D200")) +
+  geom_point(aes(y=OOB_mae_D202, col="D202")) +
+  geom_line(aes(y=OOB_mae_D202, col="D202")) +
+  labs( color = "Isotope") +
+  scale_color_manual(values = iso_colors) +
 
   coord_cartesian(ylim=c(.4,1.2)) +
   geom_hline(yintercept=min(RFE_info$OOB_mae_Avg)) +
@@ -495,20 +499,22 @@ RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_mae_Avg, 
   # geom_text(angle=90, nudge_y=.12) +
   annotate(geom = "text", x=rev(1:50), y=1.2, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
   ylab("OOB MAE") + xlab("Number variables")
-ggsave(paste0(fig_dir, "/RFE_OOB_MAE.png"), width=10, height=6)
+ggsave(paste0(fig_dir, "/RFE_OOB_MAE.png"), width=12, height=6)
 
 
 RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_rmse_Avg, label=Worst_Var)) +
-  geom_point(size=3) +
-  geom_line(size=1.2) +
+  geom_point(size=3, aes(col="Avg")) +
+  geom_line(size=1.2, aes(col="Avg")) +
 
-  geom_point(aes(y=OOB_rmse_D199), col="darkgreen") +
-  geom_line(aes(y=OOB_rmse_D199), col="darkgreen") +
-  geom_point(aes(y=OOB_rmse_D200), col="darkorange") +
-  geom_line(aes(y=OOB_rmse_D200), col="darkorange") +
-  geom_point(aes(y=OOB_rmse_D202), col="blue") +
-  geom_line(aes(y=OOB_rmse_D202), col="blue") +
-
+  geom_point(aes(y=OOB_rmse_D199, col="D199")) +
+  geom_line(aes(y=OOB_rmse_D199, col="D199")) +
+  geom_point(aes(y=OOB_rmse_D200, col="D200")) +
+  geom_line(aes(y=OOB_rmse_D200, col="D200")) +
+  geom_point(aes(y=OOB_rmse_D202, col="D202")) +
+  geom_line(aes(y=OOB_rmse_D202, col="D202")) +
+  labs( color = "Isotope") +
+  scale_color_manual(values = iso_colors) +
+  
   coord_cartesian(ylim=c(.5,1.5)) +
   geom_hline(yintercept=min(RFE_info$OOB_rmse_Avg)) +
   theme_minimal(base_size = 19) +
@@ -516,7 +522,7 @@ RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_rmse_Avg,
   # geom_text(angle=90, nudge_y=.12) +
   annotate(geom = "text", x=rev(1:50), y=1.5, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
   ylab("OOB RMSE") + xlab("Number variables")
-ggsave(paste0(fig_dir, "/RFE_OOB_RMSE.png"), width=10, height=6)
+ggsave(paste0(fig_dir, "/RFE_OOB_RMSE.png"), width=12, height=6)
 
 
 #
