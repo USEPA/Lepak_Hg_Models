@@ -301,10 +301,10 @@ for(i in 1:nrow(RFE_info)){
 }
 
 
-write.csv(RFE_info, paste0(output_dir, "rf_RFE_info_wCVerrors.csv"), row.names = F)
+# write.csv(RFE_info, paste0(output_dir, "rf_RFE_info_wCVerrors.csv"), row.names = F)
 
 
-
+RFE_info <- read.csv(paste0(output_dir, "rf_RFE_info_wCVerrors.csv"))
 
 
 # MAE iteration with least variables that has error within 1 SE of min error
@@ -448,8 +448,8 @@ nump <- ncol(Train_run)-3    # Number predictors (subtracting responses)
 # Fit final model  
 set.seed(73) 
 rf.final  <- rfsrc(Multivar(D199, D200, D202) ~., data = Train_run, samptype="swr", importance="permute", splitrule = "mahalanobis", mtry=max(floor(mtry_par*nump), 1), ntree=5000, block.size=1, nodesize = 1)
-saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
-# rf.final <- readRDS(paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
+# saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
+rf.final <- readRDS(paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
 
 
 # Predict test set
@@ -520,48 +520,93 @@ write.csv(Errors, paste0(output_dir, "Avg_Error_Table.csv"), row.names = F)
 # Compute relative errors
 
 # Naive test errors
-# naive_pred <- mean(Train_Dat$log10MeHgTratio)
-# 
-# Naive_Test_Errors <- Test_Dat  %>% summarize(
-#   Naive_MAE=mean(abs(log10MeHgTratio-naive_pred)), 
-#   Naive_RMSE=sqrt(mean((log10MeHgTratio-naive_pred)^2))) 
-# 
-# Relative_Test_Errors <- data.frame(RAE=Test_Errors$MAE/Naive_Test_Errors$Naive_MAE,
-#                                    RRSE=Test_Errors$RMSE/Naive_Test_Errors$Naive_RMSE)
-# 
-# 
-# # Naive CV errors
-# All_dat_Pred_Naive <- NULL
-# for(j in 1:max(Lake_folds$folds)){
-#   print(paste("Iteration:", i, "out of", nrow(RFE_info), "... Fold", j))
-#   TestLakes <- Lake_folds$NLA12_ID[which(Lake_folds$folds==j)]
-#   TrainData <- Train_Dat %>% filter(!NLA12_ID %in% TestLakes) %>% dplyr::select(-NLA12_ID)
-#   TestData <- Train_Dat %>% filter(NLA12_ID %in% TestLakes)
-#   TestData <- TestData %>% mutate(Pred = mean(TrainData$log10MeHgTratio), Fold=j)
-#   All_dat_Pred_Naive <- rbind(All_dat_Pred_Naive, TestData)
-#   
-# }
-# 
-# 
-# 
-# NaiveCV_Stats <- All_dat_Pred_Naive %>% group_by(Fold) %>% summarize(
-#   MAE=mean(abs(log10MeHgTratio-Pred)), 
-#   RMSE=sqrt(mean((log10MeHgTratio-Pred)^2)), 
-#   MSE=mean((log10MeHgTratio-Pred)^2),
-#   Bias=mean(Pred-log10MeHgTratio), 
-#   n=n()) 
-# 
-# Naive_MeanCV_mae <- mean(NaiveCV_Stats$MAE)
-# Naive_MeanCV_rmse <- mean(NaiveCV_Stats$RMSE)
-# 
-# Relative_CV_Errors <- data.frame(RAE=CV_Errors$MAE/Naive_MeanCV_mae,
-#                                  RRSE=CV_Errors$RMSE/Naive_MeanCV_rmse)
-# 
-# 
-# Relative_Errors <- rbind(Relative_Test_Errors, Relative_CV_Errors)
-# Relative_Errors$Dataset <- c("Test_Set_101", "Train_CV_Select")
-# Relative_Errors <- Relative_Errors %>% relocate(Dataset)
-# write.csv(Relative_Errors, paste0(output_dir, "Relative_Error_Table.csv"), row.names = F)
+naive_pred <- 0
+
+Naive_Test_Errors_D199 <- Test_Dat  %>% summarize(
+  Naive_MAE=mean(abs(D199-naive_pred)), 
+  Naive_RMSE=sqrt(mean((D199-naive_pred)^2)), 
+  Naive_MSE=mean((D199-naive_pred)^2),
+  Naive_Bias=mean(naive_pred-D199)) 
+
+Naive_Test_Errors_D200 <- Test_Dat  %>% summarize(
+  Naive_MAE=mean(abs(D200-naive_pred)), 
+  Naive_RMSE=sqrt(mean((D200-naive_pred)^2)), 
+  Naive_MSE=mean((D200-naive_pred)^2),
+  Naive_Bias=mean(naive_pred-D200)) 
+
+Naive_Test_Errors_D202 <- Test_Dat  %>% summarize(
+  Naive_MAE=mean(abs(D202-naive_pred)), 
+  Naive_RMSE=sqrt(mean((D202-naive_pred)^2)), 
+  Naive_MSE=mean((D202-naive_pred)^2),
+  Naive_Bias=mean(naive_pred-D202)) 
+
+Naive_Test_Errors_Avg <- data.frame(Naive_MAE=rowMeans(cbind( Naive_Test_Errors_D199$Naive_MAE, Naive_Test_Errors_D200$Naive_MAE,  Naive_Test_Errors_D202$Naive_MAE )))
+
+Naive_Test_Errors_Avg$Naive_MSE <- rowMeans(cbind( Naive_Test_Errors_D199$Naive_MSE, Naive_Test_Errors_D200$Naive_MSE,  Naive_Test_Errors_D202$Naive_MSE ))
+
+Naive_Test_Errors_Avg$Naive_RMSE <- sqrt(Naive_Test_Errors_Avg$Naive_MSE)
+
+Naive_Test_Errors_Avg$Naive_Bias <- rowMeans(cbind( Naive_Test_Errors_D199$Naive_Bias, Naive_Test_Errors_D200$Naive_Bias,  Naive_Test_Errors_D202$Naive_Bias ))
+
+Relative_Test_Errors_Avg <- data.frame(RAE=Test_Errors_Avg$MAE/Naive_Test_Errors_Avg$Naive_MAE,
+                                   RRSE=Test_Errors_Avg$RMSE/Naive_Test_Errors_Avg$Naive_RMSE)
+
+
+# Naive CV errors
+All_dat_Pred_Naive <- NULL
+for(j in 1:max(Lake_folds$folds)){
+  print(paste("Iteration:", i, "out of", nrow(RFE_info), "... Fold", j))
+  TestLakes <- Lake_folds$NLA12_ID[which(Lake_folds$folds==j)]
+  TrainData <- Train_Dat %>% filter(!NLA12_ID %in% TestLakes) %>% dplyr::select(-NLA12_ID)
+  TestData <- Train_Dat %>% filter(NLA12_ID %in% TestLakes)
+  
+  TestData <- TestData %>% mutate(Pred_D199 = mean(TrainData$D199), 
+                                  Pred_D200 = mean(TrainData$D200),
+                                  Pred_D202 = mean(TrainData$D202),
+                                  Fold=j)
+  All_dat_Pred_Naive <- rbind(All_dat_Pred_Naive, TestData)
+
+}
+
+
+NaiveCV_Stats_D199 <- All_dat_Pred_Naive %>% group_by(Fold) %>% summarize(
+  MAE=mean(abs(D199-Pred_D199)), 
+  RMSE=sqrt(mean((D199-Pred_D199)^2)), 
+  MSE=mean((D199-Pred_D199)^2),
+  Bias=mean(Pred_D199-D199)) 
+
+NaiveCV_Stats_D200 <- All_dat_Pred_Naive %>% group_by(Fold) %>% summarize(
+  MAE=mean(abs(D200-Pred_D200)), 
+  RMSE=sqrt(mean((D200-Pred_D200)^2)), 
+  MSE=mean((D200-Pred_D200)^2),
+  Bias=mean(Pred_D200-D200)) 
+
+NaiveCV_Stats_D202 <- All_dat_Pred_Naive %>% group_by(Fold) %>% summarize(
+  MAE=mean(abs(D202-Pred_D202)), 
+  RMSE=sqrt(mean((D202-Pred_D202)^2)), 
+  MSE=mean((D202-Pred_D202)^2),
+  Bias=mean(Pred_D202-D202)) 
+
+NaiveCV_Stats_Avg <- data.frame(Fold=NaiveCV_Stats_D202$Fold)
+NaiveCV_Stats_Avg$MAE <- rowMeans(cbind( NaiveCV_Stats_D199$MAE, NaiveCV_Stats_D200$MAE,  NaiveCV_Stats_D202$MAE ))
+NaiveCV_Stats_Avg$MSE <- rowMeans(cbind( NaiveCV_Stats_D199$MSE, NaiveCV_Stats_D200$MSE,  NaiveCV_Stats_D202$MSE ))
+NaiveCV_Stats_Avg$RMSE <- sqrt(NaiveCV_Stats_Avg$MSE)
+NaiveCV_Stats_Avg$Bias <- rowMeans(cbind( NaiveCV_Stats_D199$Bias, NaiveCV_Stats_D200$Bias,  NaiveCV_Stats_D202$Bias ))
+
+
+
+
+Naive_MeanCV_mae_Avg <- mean(NaiveCV_Stats_Avg$MAE)
+Naive_MeanCV_rmse_Avg <- mean(NaiveCV_Stats_Avg$RMSE)
+
+Relative_CV_Errors_Avg <- data.frame(RAE=CV_Errors_Avg$MAE/Naive_MeanCV_mae_Avg,
+                                 RRSE=CV_Errors_Avg$RMSE/Naive_MeanCV_rmse_Avg)
+
+
+Relative_Errors <- rbind(Relative_Test_Errors_Avg, Relative_CV_Errors_Avg)
+Relative_Errors$Dataset <- c("Test_Set_34", "Train_CV_Select")
+Relative_Errors <- Relative_Errors %>% relocate(Dataset)
+write.csv(Relative_Errors, paste0(output_dir, "Avg_Relative_Error_Table.csv"), row.names = F)
 
 
 
