@@ -7,6 +7,7 @@ library(doParallel)
 library(pdp) # 0.8.1
 library(colorspace)
 library(vegan)
+library(maps)
 
 # library(remotes)
 # install_version( "tidyverse",version = "2.0.0")
@@ -662,23 +663,74 @@ ggsave(paste0(fig_dir, "/D202_Best_MAE_TEST_vs_Obs.png"), width=8, height=6)
 
 
 # Plot residuals spatially
-# Test_Dat$Residual <- Test_Dat$log10MeHgTratio - Test_Dat$Pred
-# Top_MAE_Mod$Residual <- Top_MAE_Mod$log10MeHgTratio - Top_MAE_Mod$Pred
-# 
-# 
-# Train_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Train_Dat$NLA12_ID)
-# Test_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Test_Dat$NLA12_ID)
-# 
-# 
-# Test_Dat <- left_join(Test_Dat, Test_Geo)
-# Top_MAE_Mod <- left_join(Top_MAE_Mod, Train_Geo)
-# 
-# # Spatial distribution of residuals
-# # ggplot(Test_Dat, aes(col=Residual, x=LON_DD83, y=LAT_DD83)) + geom_point(size=2) + theme_minimal()
-# 
-# ggplot(Top_MAE_Mod, aes(fill=Residual, x=LON_DD83, y=LAT_DD83)) + geom_point(size=3, col="gray70", shape=21) + theme_minimal() +
-#   geom_point(data=Test_Dat, size=4, aes(fill=Residual, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
-#   scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T)
-# ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space.png"), width=10, height=6)
+Test_Dat$Residual_D199 <- Test_Dat$D199 - Test_Dat$Pred_D199
+Test_Dat$Residual_D200 <- Test_Dat$D200 - Test_Dat$Pred_D200
+Test_Dat$Residual_D202 <- Test_Dat$D202 - Test_Dat$Pred_D202
+Top_MAE_Mod$Residual_D199 <- Top_MAE_Mod$D199 - Top_MAE_Mod$Pred_D199 # CV pred
+Top_MAE_Mod$Residual_D200 <- Top_MAE_Mod$D200 - Top_MAE_Mod$Pred_D200 # CV pred
+Top_MAE_Mod$Residual_D202 <- Top_MAE_Mod$D202 - Top_MAE_Mod$Pred_D202 # CV pred
+
+
+Train_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Train_Dat$NLA12_ID)
+Test_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Test_Dat$NLA12_ID)
+
+
+Test_Dat <- left_join(Test_Dat, Test_Geo)
+Top_MAE_Mod <- left_join(Top_MAE_Mod, Train_Geo)
+
+MainStates <- map_data("state")
+
+
+# Spatial distribution of residuals
+# ggplot(Test_Dat, aes(fill=Residual_D199, x=LON_DD83, y=LAT_DD83)) + geom_point(size=2) + theme_minimal()+
+#   scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
+
+ggplot(Top_MAE_Mod, aes(fill=Residual_D199, x=LON_DD83, y=LAT_DD83)) + 
+  geom_polygon( data=MainStates, aes(x=long, y=lat, group=group), color="gray80", fill=NA ) +
+  geom_point(size=3, col="gray70", shape=21) + 
+  theme_void() +
+  geom_point(data=Test_Dat, size=4, aes(fill=Residual_D199, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
+  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
+ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space_D199.png"), width=10, height=6)
+
+ggplot(Top_MAE_Mod, aes(fill=Residual_D200, x=LON_DD83, y=LAT_DD83)) + 
+  geom_polygon( data=MainStates, aes(x=long, y=lat, group=group), color="gray80", fill=NA ) +
+  geom_point(size=3, col="gray70", shape=21) + 
+  theme_void() +
+  geom_point(data=Test_Dat, size=4, aes(fill=Residual_D200, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
+  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
+ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space_D200.png"), width=10, height=6)
+
+ggplot(Top_MAE_Mod, aes(fill=Residual_D202, x=LON_DD83, y=LAT_DD83)) + 
+  geom_polygon( data=MainStates, aes(x=long, y=lat, group=group), color="gray80", fill=NA ) +
+  geom_point(size=3, col="gray70", shape=21) + 
+  theme_void() +
+  geom_point(data=Test_Dat, size=4, aes(fill=Residual_D202, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
+  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
+ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space_D202.png"), width=10, height=6)
+
+
 
 # ArmyRose, Earth, Fall, Geyser, TealRose, Temps, Tropic, PuOr, RdBu, RdGy, PiYG, PRGn, BrBG, RdYlBu,  Spectral, Zissou 1, Cividis, Roma
+
+
+
+
+### Test spatial autocorrelation for final model
+CV_Resids <- Top_MAE_Mod %>% dplyr::select(Residual_D199, Residual_D200, Residual_D202, LON_DD83, LAT_DD83)
+
+# D199
+dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
+dist_res <- as.matrix(dist(CV_Resids$Residual_D199))
+mantel_test <- mantel(dists, dist_res, permutations=1000)
+mantel_test$signif # r=0.04814 , p=.03 There is slight spatial autocorrelation in residuals
+# D200
+dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
+dist_res <- as.matrix(dist(CV_Resids$Residual_D200))
+mantel_test <- mantel(dists, dist_res, permutations=1000)
+mantel_test$signif # r=-0.01869 , p=.82 No spatial autocorrelation in residuals
+# D202
+dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
+dist_res <- as.matrix(dist(CV_Resids$Residual_D202))
+mantel_test <- mantel(dists, dist_res, permutations=1000)
+mantel_test$signif # r=0.12 , p=0.001 There is slight spatial autocorrelation in residuals
