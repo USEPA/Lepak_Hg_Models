@@ -9,6 +9,7 @@ library(doParallel)
 library(pdp) # 0.8.1
 library(colorspace)
 library(vegan)
+library(maps)
 
 
 # library(remotes)
@@ -22,6 +23,7 @@ fig_dir <- "Figures/THg/"
 
 dir.create(paste0(output_dir, "CV"), showWarnings = F)
 dir.create(paste0(output_dir, "PDP"), showWarnings = F)
+dir.create(paste0(output_dir, "PDP/Bivariate"), showWarnings = F)
 dir.create(paste0(fig_dir, "PDP"), showWarnings = F)
 dir.create(paste0(fig_dir, "PDP/Bivariate"), showWarnings = F)
 
@@ -242,7 +244,10 @@ for(i in 1:nrow(RFE_info)){
 }
 
 
-write.csv(RFE_info, paste0(output_dir, "rf_RFE_info_wCVerrors.csv"), row.names = F)
+# write.csv(RFE_info, paste0(output_dir, "rf_RFE_info_wCVerrors.csv"), row.names = F)
+
+
+RFE_info <- read.csv(paste0(output_dir, "rf_RFE_info_wCVerrors.csv"))
 
 
 # MAE iteration with least variables that has error within 1 SE of min error
@@ -251,13 +256,21 @@ best_it_mae <- max(which(RFE_info$MeanCV_mae <= RFE_info$MeanCV_mae[min_it_mae] 
 # Remaining variables
 RFE_info$Worst_Var[best_it_mae:nrow(RFE_info)]
 
+
+RFE_info$Predictor <- RFE_info$Worst_Var
+RFE_info$Predictor[RFE_info$Predictor=="WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s"] <- "WetLossConv"
+RFE_info$Predictor[RFE_info$Predictor=="WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s"] <- "WetLossLS"
+
+cat(rev(RFE_info$Predictor[best_it_mae:nrow(RFE_info)]), sep = "\n")
+
+
 RFE_info$Subset_MAE <- "Out"
 RFE_info$Subset_MAE[best_it_mae:nrow(RFE_info)] <- "In"
 RFE_info$Point_Col <- "Black"
 RFE_info$Point_Col[best_it_mae:nrow(RFE_info)] <- "firebrick3"
 
 RFE_info  %>% filter(NumVars %in% 1:50) %>% 
-  ggplot(aes(x=NumVars, y=MeanCV_mae, label=Worst_Var)) + 
+  ggplot(aes(x=NumVars, y=MeanCV_mae, label=Predictor)) + 
   geom_point(size=3, aes(col=Subset_MAE)) + 
   geom_line(size=1.2) +
   coord_cartesian(ylim=c(.15,.4)) +
@@ -265,7 +278,7 @@ RFE_info  %>% filter(NumVars %in% 1:50) %>%
   geom_hline(yintercept=RFE_info$MeanCV_mae[min_it_mae] + RFE_info$SE_CV_mae[min_it_mae], lty=2, size=1) +
   theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
-  annotate(geom = "text", x=rev(1:50), y=.40, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4, col=RFE_info$Point_Col[RFE_info$NumVars %in% 1:50]) +
+  annotate(geom = "text", x=rev(1:50), y=.40, label=RFE_info$Predictor[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4, col=RFE_info$Point_Col[RFE_info$NumVars %in% 1:50]) +
   ylab("CV MAE") + xlab("Number variables") + 
   theme(legend.position="none") +
   scale_color_manual(values = c("firebrick3", "Black"))
@@ -286,7 +299,7 @@ RFE_info$Point_Col_rmse <- "Black"
 RFE_info$Point_Col_rmse[best_it_rmse:nrow(RFE_info)] <- "firebrick3"
 
 RFE_info  %>% filter(NumVars %in% 1:50) %>% 
-  ggplot(aes(x=NumVars, y=MeanCV_rmse, label=Worst_Var)) + 
+  ggplot(aes(x=NumVars, y=MeanCV_rmse, label=Predictor)) + 
   geom_point(size=3, aes(col=Subset_RMSE)) + 
   geom_line(size=1.2) +
   coord_cartesian(ylim=c(.25,.5)) +
@@ -294,7 +307,7 @@ RFE_info  %>% filter(NumVars %in% 1:50) %>%
   geom_hline(yintercept=RFE_info$MeanCV_rmse[min_it_mae] + RFE_info$SE_CV_rmse[min_it_mae], lty=2, size=1) +
   theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
-  annotate(geom = "text", x=rev(1:50), y=.50, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4, col=RFE_info$Point_Col_rmse[RFE_info$NumVars %in% 1:50]) +
+  annotate(geom = "text", x=rev(1:50), y=.50, label=RFE_info$Predictor[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4, col=RFE_info$Point_Col_rmse[RFE_info$NumVars %in% 1:50]) +
   ylab("CV RMSE") + xlab("Number variables") + 
   theme(legend.position="none") +
   scale_color_manual(values = c("firebrick3", "Black"))
@@ -302,7 +315,7 @@ ggsave(paste0(fig_dir, "/RFE_CV_RMSE.png"), width=10, height=6)
 
 
 # Plot OOB error with new CV error - almost the same
-# RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=MeanCV_mae, label=Worst_Var)) + 
+# RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=MeanCV_mae, label=Predictor)) + 
 #   geom_point(size=3, col="red") + 
 #   geom_line(size=1.2, col="red") +
 #   geom_point(aes(x=NumVars, y=OOB_mae), col="black", size=3) + 
@@ -311,21 +324,21 @@ ggsave(paste0(fig_dir, "/RFE_CV_RMSE.png"), width=10, height=6)
 #   geom_hline(yintercept=min(RFE_info$MeanCV_mae), col="red") +
 #   theme_minimal(base_size = 19) +
 #   scale_x_continuous(breaks=seq(2,50,2)) +
-#   annotate(geom = "text", x=rev(1:50), y=.40, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
+#   annotate(geom = "text", x=rev(1:50), y=.40, label=RFE_info$Predictor[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
 #   ylab("CV MAE") + xlab("Number variables") +
 #   geom_errorbar(aes(ymin=MeanCV_mae-SE_CV_mae, ymax=MeanCV_mae+SE_CV_mae), width=.2, col="red")
 
 
 # Bias
 RFE_info  %>% filter(NumVars %in% 1:50) %>% 
-  ggplot(aes(x=NumVars, y=MeanCV_bias, label=Worst_Var)) + 
+  ggplot(aes(x=NumVars, y=MeanCV_bias, label=Predictor)) + 
     geom_point(size=4) + 
     geom_line(size=1.2) +
     geom_hline(yintercept=0, lty=2, col="black", size=1.2) +
     coord_cartesian(ylim=c(-.004,.008)) +
     theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
-  annotate(geom = "text", x=rev(1:50), y=.008, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
+  annotate(geom = "text", x=rev(1:50), y=.008, label=RFE_info$Predictor[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
   ylab("CV Mean Bias") + xlab("Number variables") 
 ggsave(paste0(fig_dir, "/RFE_CV_Bias.png"), width=10, height=6)
 
@@ -386,9 +399,9 @@ best_it_mae <- max(which(RFE_info$MeanCV_mae <= RFE_info$MeanCV_mae[min_it_mae] 
 RFE_info$Worst_Var[best_it_mae:nrow(RFE_info)]
 final.preds <- c(RFE_info$Worst_Var[best_it_mae:nrow(RFE_info)])
 
-Train_run <- Train_Dat[, colnames(Train_Dat) %in% c(final.preds, response_var, "NLA12_ID")]
+Train_run <- Train_Dat[, colnames(Train_Dat) %in% c(final.preds, response_var)]
 
-nump <- ncol(Train_run)-2    # Number predictors (subtracting response, NLA12_ID)
+nump <- ncol(Train_run)-1    # Number predictors (subtracting response, NLA12_ID)
 
 # Fit final model  
 set.seed(73) 
@@ -422,7 +435,7 @@ Test_Errors <- Test_Dat  %>% summarize(
   # MSE=mean((log10THg-Pred)^2),
   Bias=mean(Pred-log10THg)) 
 #         MAE      RMSE        Bias
-#   0.1736518 0.2296981  0.04114562
+#   0.1625969 0.2208652 0.009062603
 
 # Compare to CV error
 CV_Errors <- RFE_info[best_it_mae,] %>% dplyr::select(MeanCV_mae, MeanCV_rmse, MeanCV_bias) %>% rename(MAE=MeanCV_mae, RMSE=MeanCV_rmse, Bias=MeanCV_bias)
@@ -515,16 +528,20 @@ Test_Geo <- Lake_Geo %>% filter(NLA12_ID %in% Test_Dat$NLA12_ID)
 Test_Dat <- left_join(Test_Dat, Test_Geo)
 Top_MAE_Mod <- left_join(Top_MAE_Mod, Train_Geo)
 
+MainStates <- map_data("state")
+
 # Spatial distribution of residuals
 # ggplot(Test_Dat, aes(col=Residual, x=LON_DD83, y=LAT_DD83)) + geom_point(size=2) + theme_minimal()
 
-ggplot(Top_MAE_Mod, aes(fill=Residual, x=LON_DD83, y=LAT_DD83)) + geom_point(size=3, col="gray70", shape=21) + theme_minimal() +
-  geom_point(data=Test_Dat, size=4, aes(fill=Residual, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
-  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T)
+ggplot(Top_MAE_Mod, aes(fill=Residual, x=LON_DD83, y=LAT_DD83)) + 
+  geom_polygon( data=MainStates, aes(x=long, y=lat, group=group), color="gray80", fill=NA ) +
+  geom_point(size=3, col="gray50", shape=21) + 
+  theme_void() +
+  geom_point(data=Test_Dat, size=3.5, aes(fill=Residual, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
+  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-2,2,1), limits=c(-2.3,2.3))
 ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space.png"), width=10, height=6)
 
 # ArmyRose, Earth, Fall, Geyser, TealRose, Temps, Tropic, PuOr, RdBu, RdGy, PiYG, PRGn, BrBG, RdYlBu,  Spectral, Zissou 1, Cividis, Roma
-
 
 
 
@@ -551,55 +568,132 @@ cat(final.preds, sep = "\n")
 
 # Single variable partial dependence plots
 for(i in 1:length(final.preds)){
-  partial1 <- partial(rf.final, pred.var=paste0(final.preds[i]), quantiles=T, probs=seq(0.05, 0.95, 0.05))
-  saveRDS(partial1, paste0(output_dir, "PDP/", paste0(final.preds[i]), "_PDP.rds"))
   
-  autoplot(partial1, size=1.2) + theme_minimal() + xlab(paste0(final.preds[i])) + ylab("log10THg") +
+  pred_dat <- Train_run %>% dplyr::select(final.preds[i])
+  
+  lim.i <- round(quantile(pred_dat[,1], probs=c(0.05, 0.95)), 1)
+  
+  grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+  names(grid.i) <- names(pred_dat)
+  
+  # partial1 <- partial(rf.final, pred.var=paste0(final.preds[i]), quantiles=T, probs=seq(0.05, 0.95, 0.05))
+  partial1 <- partial(rf.final, pred.var=paste0(final.preds[i]),  pred.grid = grid.i)
+  
+  pred_lab <- final.preds[i]
+  if(pred_lab == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred_lab <- "WetLossConv"
+  if(pred_lab == "WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s") pred_lab <- "WetLossLS"
+  
+  saveRDS(partial1, paste0(output_dir, "PDP/", paste0(pred_lab), "_PDP.rds"))
+  
+  print(pred_lab)
+  
+  autoplot(partial1, size=1.2) + theme_minimal() + xlab(paste0(pred_lab)) + ylab("log10THg") +
     theme(text=element_text(size=20))  #+
     # scale_x_continuous(breaks=seq(-2,6,2)) #+
-  ggsave(paste0(fig_dir, "PDP/PDP_", final.preds[i], ".png"), width=7, height=5)
+  ggsave(paste0(fig_dir, "PDP/PDP_", pred_lab, ".png"), width=7, height=5)
 }
 
-# partial1 <- partial(rf.final, pred.var=paste0(final.preds[i]), quantiles=T, probs=seq(0.05, 0.95, 0.1))
 
 
 
 
 # Two variable partial dependence plots (contours) to visualize interactions 
 
-# Note: These are currently manually chosen, but could run all pairwise interactions
+# Unique predictor combos
+pred_combos <- combn(final.preds, 2)
+
+for (i in 1:ncol(pred_combos)){
+
+  print(i)
+  
+  xvar <- pred_combos[1,i] 
+  yvar <- pred_combos[2,i]
+  
+  pred_lab_x <- xvar
+  pred_lab_y <- yvar
+  
+  if(pred_lab_x == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred_lab_x <- "WetLossConv"
+  if(pred_lab_x == "WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s") pred_lab_x <- "WetLossLS"
+  
+  if(pred_lab_y == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred_lab_y <- "WetLossConv"
+  if(pred_lab_y == "WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s") pred_lab_y <- "WetLossLS"
+  
+  pred_dat <- Train_run %>% dplyr::select(paste0(xvar), paste0(yvar))
+  
+  lim.i <- round(quantile(pred_dat[,1], probs=c(0.05, 0.95)), 1)
+  grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))=
+  names(grid.i) <- names(pred_dat)[1]
+  
+  lim.j <- round(quantile(pred_dat[,2], probs=c(0.05, 0.95)), 1)
+  grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+  names(grid.j) <- names(pred_dat)[2]
+  
+  grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+  
+  
+  cl <- makeCluster(5) 
+  doParallel::registerDoParallel(cl)
+  
+  rf.2pd <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+  
+  saveRDS(rf.2pd, paste0(output_dir, "PDP/Bivariate/", paste0(pred_lab_x), "_", paste0(pred_lab_y),   "_PDP.rds"))
+  stopCluster(cl)
+  # doParallel::stopImplicitCluster()
+  
+    # rf.2pd <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred_lab_x), "_", paste0(pred_lab_y),   "_PDP.rds"))
+  
+  suppressWarnings(print(
+  autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
+    theme_minimal() +
+    scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
+    theme(text=element_text(size=20))  +
+    xlab(paste0(pred_lab_x)) +
+    ylab(paste0(pred_lab_y))
+  ))
+  
+  ggsave(paste0(fig_dir, "PDP/Bivariate/", paste0(pred_lab_x), "_", paste0(pred_lab_y),   "_PDP.png"), width=7, height=5)
+}
+
+
+
+
 
 # q50 <- diverging_hcl(50, palette = "Blue-Red 3")
 # plotPartial(rf.2pd, levelplot = TRUE, zlab = paste0(response_var), drape = TRUE,
 # col.regions = q50, rug=T, train=Train_run, contour=T, contour.color="gray50")
 
-cl <- makeCluster(5) 
-doParallel::registerDoParallel(cl)
-rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("LOI_PERCENT", "Ave_pH"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
-# increase grid.resolution for finer resolution contour plot (but will increase computation time)
-saveRDS(rf.2pd, paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
-doParallel::stopImplicitCluster()
-# rf.2pd <- readRDS(paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
+# cl <- makeCluster(5) 
+# doParallel::registerDoParallel(cl)
+# 
+# rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("LOI_PERCENT", "Ave_pH"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
+# # increase grid.resolution for finer resolution contour plot (but will increase computation time)
+# saveRDS(rf.2pd, paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
+# 
+# doParallel::stopImplicitCluster()
+# # rf.2pd <- readRDS(paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
+# 
+# autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
+#   theme_minimal() +
+#   scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
+#   theme(text=element_text(size=20))
+# ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_LOI_pH_PDP.png"), width=7, height=5)
 
-autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
-  theme_minimal() +
-  scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
-  theme(text=element_text(size=20))
-ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_LOI_pH_PDP.png"), width=7, height=5)
 
+###############
 
-
-cl <- makeCluster(5) 
-doParallel::registerDoParallel(cl)
-rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s", "RunoffCat"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
-# increase grid.resolution for finer resolution contour plot (but will increase computation time)
-saveRDS(rf.2pd, paste0(output_dir, "PDP/WetLossLS_Runoff_PDP.rds"))
-doParallel::stopImplicitCluster()
-# rf.2pd <- readRDS(paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
-
-autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
-  theme_minimal() +
-  scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
-  theme(text=element_text(size=20))  +
-  xlab("WetLossLS_Loss_soluble_spec_large_scale_precip")
-ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_WetLossLS_Runoff_PDP.png"), width=7, height=5)
+# cl <- makeCluster(5) 
+# doParallel::registerDoParallel(cl)
+# 
+# rf.2pd <- partial(rf.final, train=Train_run, pred.var = c("WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s", "RunoffCat"), grid.resolution = 20,  parallel=TRUE,  paropts=list(.packages = "randomForest")) # ,
+# # increase grid.resolution for finer resolution contour plot (but will increase computation time)
+# saveRDS(rf.2pd, paste0(output_dir, "PDP/WetLossLS_Runoff_PDP.rds"))
+# 
+# doParallel::stopImplicitCluster()
+# # rf.2pd <- readRDS(paste0(output_dir, "PDP/LOI_pH_PDP.rds"))
+# 
+# autoplot(rf.2pd,  contour = T, legend.title = paste0(response_var)) +
+#   theme_minimal() +
+#   scale_fill_continuous_diverging(name=paste0(response_var), palette = 'Blue-Red', mid=mean(range(rf.2pd$yhat)), alpha=1, rev=F) +
+#   theme(text=element_text(size=20))  +
+#   xlab("WetLossLS_Loss_soluble_spec_large_scale_precip")
+# ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_WetLossLS_Runoff_PDP.png"), width=7, height=5)
