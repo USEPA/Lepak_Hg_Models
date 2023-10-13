@@ -571,7 +571,7 @@ for(i in 1:length(final.preds)){
   
   pred_dat <- Train_run %>% dplyr::select(final.preds[i])
   
-  lim.i <- round(quantile(pred_dat[,1], probs=c(0.05, 0.95)), 1)
+  lim.i <- round(quantile(pred_dat[,1], probs=c(0.05, 0.95)), 4)
   
   grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
   names(grid.i) <- names(pred_dat)
@@ -602,6 +602,10 @@ for(i in 1:length(final.preds)){
 # Unique predictor combos
 pred_combos <- combn(final.preds, 2)
 
+cl <- makeCluster(5) 
+doParallel::registerDoParallel(cl)
+
+
 for (i in 1:ncol(pred_combos)){
 
   print(i)
@@ -620,24 +624,21 @@ for (i in 1:ncol(pred_combos)){
   
   pred_dat <- Train_run %>% dplyr::select(paste0(xvar), paste0(yvar))
   
-  lim.i <- round(quantile(pred_dat[,1], probs=c(0.05, 0.95)), 1)
+  lim.i <- round(quantile(pred_dat[,1], probs=c(0.05, 0.95)), 4)
   grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))=
   names(grid.i) <- names(pred_dat)[1]
   
-  lim.j <- round(quantile(pred_dat[,2], probs=c(0.05, 0.95)), 1)
+  lim.j <- round(quantile(pred_dat[,2], probs=c(0.05, 0.95)), 4)
   grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
   names(grid.j) <- names(pred_dat)[2]
   
   grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
   
   
-  cl <- makeCluster(5) 
-  doParallel::registerDoParallel(cl)
   
   rf.2pd <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
   
   saveRDS(rf.2pd, paste0(output_dir, "PDP/Bivariate/", paste0(pred_lab_x), "_", paste0(pred_lab_y),   "_PDP.rds"))
-  stopCluster(cl)
   # doParallel::stopImplicitCluster()
   
     # rf.2pd <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred_lab_x), "_", paste0(pred_lab_y),   "_PDP.rds"))
@@ -653,6 +654,8 @@ for (i in 1:ncol(pred_combos)){
   
   ggsave(paste0(fig_dir, "PDP/Bivariate/", paste0(pred_lab_x), "_", paste0(pred_lab_y),   "_PDP.png"), width=7, height=5)
 }
+
+stopCluster(cl)
 
 
 
