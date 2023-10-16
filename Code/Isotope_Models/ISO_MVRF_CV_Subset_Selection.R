@@ -387,8 +387,8 @@ Top_MAE_Mod %>% ggplot(aes(x=D199, y=Pred_D199)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
-  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
-  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
+  # geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  # geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
   geom_point(size=2, col="darkgreen") +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
@@ -400,8 +400,8 @@ Top_MAE_Mod %>% ggplot(aes(x=D200, y=Pred_D200)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
-  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
-  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
+  # geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  # geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
   geom_point(size=2, col="darkorange") +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
@@ -413,8 +413,8 @@ Top_MAE_Mod %>% ggplot(aes(x=D202, y=Pred_D202)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
-  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
-  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
+  # geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  # geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
   geom_point(size=2, col="blue") +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
@@ -516,6 +516,28 @@ Errors <- Errors %>% relocate(Dataset)
 write.csv(Errors, paste0(output_dir, "Avg_Error_Table.csv"), row.names = F)
 
 
+# Save errors by isotope
+
+names(RFE_info[best_it_mae,])
+
+
+CV_Errors_D199 <- RFE_info[best_it_mae,] %>% dplyr::select(D199_MeanCV_mae, D199_MeanCV_rmse,  D199_MeanCV_bias) %>% rename(MAE=D199_MeanCV_mae, RMSE=D199_MeanCV_rmse, Bias=D199_MeanCV_bias)
+CV_Errors_D200 <- RFE_info[best_it_mae,] %>% dplyr::select(D200_MeanCV_mae, D200_MeanCV_rmse,  D200_MeanCV_bias) %>% rename(MAE=D200_MeanCV_mae, RMSE=D200_MeanCV_rmse, Bias=D200_MeanCV_bias)
+CV_Errors_D202 <- RFE_info[best_it_mae,] %>% dplyr::select(D202_MeanCV_mae, D202_MeanCV_rmse,  D202_MeanCV_bias) %>% rename(MAE=D202_MeanCV_mae, RMSE=D202_MeanCV_rmse, Bias=D202_MeanCV_bias)
+
+Iso_Errors <- rbind(Test_Errors_D199[,-3], CV_Errors_D199, Test_Errors_D200[,-3], CV_Errors_D200, Test_Errors_D202[,-3], CV_Errors_D202) 
+Iso_Errors$Dataset <- c("D199_test", "D199_CV", "D200_test", "D200_CV", "D202_test", "D202_CV")
+Iso_Errors <- Iso_Errors %>% relocate(Dataset)
+write.csv(Iso_Errors, paste0(output_dir, "Iso_Error_Table.csv"), row.names = F)
+
+
+Iso_Errors_Units <- Iso_Errors
+
+Iso_Errors_Units[1:2,2:4] <- (Iso_Errors_Units[1:2,2:4])*(Iso_stats$D199[2])
+Iso_Errors_Units[3:4,2:4] <- (Iso_Errors_Units[3:4,2:4])*(Iso_stats$D200[2])
+Iso_Errors_Units[5:6,2:4] <- (Iso_Errors_Units[5:6,2:4])*(Iso_stats$D202[2])
+
+write.csv(Iso_Errors_Units, paste0(output_dir, "Iso_Error_Table_Orig_Units.csv"), row.names = F)
 
 
 # Compute relative errors
@@ -623,8 +645,8 @@ Test_Dat %>% ggplot(aes(x=D199, y=Pred_D199)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
-  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
-  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
+  # geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  # geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
   geom_point(size=2.5, col="darkgreen") +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
@@ -636,8 +658,8 @@ Test_Dat %>% ggplot(aes(x=D200, y=Pred_D200)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
-  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
-  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
+  # geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  # geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
   geom_point(size=2.5, col="darkorange") +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
@@ -649,8 +671,8 @@ Test_Dat %>% ggplot(aes(x=D202, y=Pred_D202)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
   geom_abline(intercept=1, slope=1, color="black", linetype="dashed", size=1.1) +
   geom_abline(intercept=-1, slope=1, color="black", linetype="dashed", size=1.1) +
-  geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
-  geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
+  # geom_abline(intercept=log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +
+  # geom_abline(intercept=-log10(5), slope=1, color="gray50", linetype="dashed", size=.8) +  
   geom_point(size=2.5, col="blue") +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
