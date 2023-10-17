@@ -222,8 +222,8 @@ Impute_dat_preds[sapply(Impute_dat_preds, is.character)] <- lapply(Impute_dat_pr
 registerDoParallel(cores=7)
 set.seed(3)
 Pred_Imp_Mod <- missForest(as.data.frame(Impute_dat_preds), verbose = TRUE, parallelize="variables", variablewise = TRUE, ntree=500, mtry = floor(ncol(Impute_dat_preds)/3))
-saveRDS(Pred_Imp_Mod, "Saved_Models/ISO_missForest_TrainMiss_all127preds_500tr_mtryThird.rds")
-# Pred_Imp_Mod <- readRDS("Saved_Models/ISO_missForest_TrainMiss_all127preds_500tr_mtryThird.rds")
+# saveRDS(Pred_Imp_Mod, "Saved_Models/ISO_missForest_TrainMiss_all127preds_500tr_mtryThird.rds")
+Pred_Imp_Mod <- readRDS("Saved_Models/ISO_missForest_TrainMiss_all127preds_500tr_mtryThird.rds")
 
 names(Pred_Imp_Mod)
 
@@ -274,8 +274,8 @@ write.csv(Imputed_Training_Set, "Formatted_Data/ISO_Imputed_Training_Data.csv", 
 registerDoParallel(cores=7)
 set.seed(3)
 Pred_Imp_Mod_wTEST <- missForest(as.data.frame(Impute_dat_preds_wTEST), verbose = TRUE, parallelize="variables", variablewise = TRUE, ntree=500, mtry = floor(ncol(Impute_dat_preds_wTEST)/3))
-saveRDS(Pred_Imp_Mod_wTEST, "Saved_Models/ISO_missForest_Test_all127preds_500tr_mtryThird.rds")
-# Pred_Imp_Mod_wTEST <- readRDS("Saved_Models/ISO_missForest_Test_all127preds_500tr_mtryThird.rds")
+# saveRDS(Pred_Imp_Mod_wTEST, "Saved_Models/ISO_missForest_Test_all127preds_500tr_mtryThird.rds")
+Pred_Imp_Mod_wTEST <- readRDS("Saved_Models/ISO_missForest_Test_all127preds_500tr_mtryThird.rds")
 
 # Imputed test data
 Impute_dat_preds_TEST_FILLED <- Pred_Imp_Mod_wTEST$ximp
@@ -295,4 +295,8 @@ Impute_dat_wTEST$Gas_Hg_Hg0Conc_ng_m3[1:20]
 # 34 lakes for testing
 Imputed_Test_Set <- Impute_dat_preds_TEST_FILLED %>% filter(TrainTest=="Iso_Test") %>% dplyr::select(-TrainTest)
 write.csv(Imputed_Test_Set, "Formatted_Data/ISO_Imputed_Test_Data.csv", row.names = F)
+
+
+# Write all imputed data for prediction
+write.csv(Impute_dat_preds_TEST_FILLED, "Formatted_Data/ISO_Imputed_Test_Data_ALL_LAKES.csv", row.names = F)
 
