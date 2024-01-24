@@ -448,7 +448,7 @@ nump <- ncol(Train_run)-1    # Number predictors (subtracting responses)
 # Fit final model  
 set.seed(73) 
 rf.final  <- rfsrc(D202 ~., data = Train_run, samptype="swr", importance="permute", splitrule = "mse", mtry=max(floor(mtry_par*nump), 1), ntree=5000, block.size=1, nodesize = 1)
-saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
+# saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
 rf.final <- readRDS(paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
 
 
