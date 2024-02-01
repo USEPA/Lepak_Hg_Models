@@ -4,12 +4,12 @@
 # library(permimp) # permimp_1.0-2 
 library(randomForest) # randomForest_4.7-1.1
 # library(tuneRanger) # tuneRanger_0.5       
-library(tidyverse) # tidyverse_1.3.2
+library(tidyverse) # tidyverse_2.0.0
 
 # library(remotes)
 # install_version(
-#   "party",
-#   version = "1.3-9")
+#   "randomForest",
+#   version = "4.7-1.1")
 
 
 
