@@ -103,7 +103,7 @@ ggplot(grid_search, aes(x=mtry, y=OOB_error, col=nodesize))+geom_point()
 
 grid_search %>% arrange(OOB_error)
 floor(.20*p)
-# Let's go with nodesize=1, mtry=.20*p ....again!! Keep same nodesize as LOI and let mtry vary
+# Let's go with nodesize=1, mtry=.20*p !! Keep same nodesize as LOI and let mtry vary
 # Moving forward, just tune mtry and keep nodesize=1
 
 
@@ -120,8 +120,8 @@ rf.all  <- randomForest(log10LOI ~ ., data=Train_Dat_run,
                         keep.forest=T,
                         keep.inbag = T,
                         importance=T)
-saveRDS(rf.all, paste0(model_dir, "rf_full_mtry20_ntree5000_node1_sd36.rds"))
-# rf.all <- readRDS(paste0(model_dir, "rf_full_mtry20_ntree5000_node1_sd36.rds"))
+# saveRDS(rf.all, paste0(model_dir, "rf_full_mtry20_ntree5000_node1_sd36.rds"))
+rf.all <- readRDS(paste0(model_dir, "rf_full_mtry20_ntree5000_node1_sd36.rds"))
 
 
 
@@ -174,6 +174,7 @@ Train_Dat %>% group_by(LAKE_ORIGIN12) %>% summarize(mean=mean(log10(STHG_ng_g)),
 
 
 # RFE with unconditional permutation importance
+# Reran this 2/15/24 because had wrong mtry (.15p instead of .20p)
 
 # Pull out response and predictors
 All_dat_preds_loop <- Train_Dat_run 
@@ -203,7 +204,7 @@ for(i in 1:p){
   
   set.seed(13) 
   rf  <- randomForest(log10LOI ~ ., data=All_dat_preds_loop, 
-                      mtry=max(floor(.15*nump), 1), 
+                      mtry=max(floor(.20*nump), 1), 
                       ntree=5000,
                       nodesize=1,
                       #keep.forest=T,
@@ -256,7 +257,7 @@ write.csv(RFE_info, paste0(output_dir, "rf_RFE_info.csv"), row.names = FALSE)
 
 end.time <- Sys.time()
 end.time-start.time
-# 5.18883  hr
+# 3.242803   hr
 
 
 
@@ -284,11 +285,11 @@ ggplot(RFE_info, aes(x=1:length(OOB_mae), y=OOB_bias)) + geom_line() + geom_poin
 
 
 
-which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) # 24
-which(RFE_info$OOB_mae==min(RFE_info$OOB_mae)) # 69
+which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) # 50
+which(RFE_info$OOB_mae==min(RFE_info$OOB_mae)) # 78
 
-min(RFE_info$OOB_rmse) # 0.2337159
-min(RFE_info$OOB_mae) # 0.1594671
+min(RFE_info$OOB_rmse) # 0.2335841
+min(RFE_info$OOB_mae) # 0.1587488
 
 
 RFE_info[which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) : nrow(RFE_info),]
@@ -334,9 +335,8 @@ write.csv(RFE_info_write, paste0(output_dir, "LOI_noHgModel_rf_RFE_info.csv"), r
 
 
 
-# Do CV at each iteration to get SE
+##### Do CV for subset selection - see LOInoHgPreds_RF_CV_Subset_Selection.R #####
 
-# Do stratified partitioning by space though to get 
 
 
 
