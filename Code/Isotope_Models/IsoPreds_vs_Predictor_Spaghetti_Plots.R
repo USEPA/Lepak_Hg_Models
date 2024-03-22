@@ -32,8 +32,8 @@ table(df$HUC2) # 18
 df$Omernik_II <- factor(df$Omernik_II) # 19
 sort(table(df$Omernik_II))
 
-# df$Omernik_III <- factor(df$Omernik_III)
-# sort(table(df$Omernik_III)) # Too few per ecoregion
+df$Omernik_III <- factor(df$Omernik_III)
+sort(table(df$Omernik_III)) # Too few per ecoregion
 
 
 MainStates <- map_data("state")
@@ -50,15 +50,15 @@ cols4 <- sample(c(cols3, cols2))
 
 
 # Plot HUC2
-centroid <- df %>% group_by(HUC2) %>% summarise(lon_mean=mean(LON_DD83), lat_mean=mean(LAT_DD83))
-ggplot(df, aes(fill=HUC2, x=LON_DD83, y=LAT_DD83)) + 
-  geom_polygon( data=MainStates, aes(x=long, y=lat, group=group), color="gray80", fill=NA ) +
-  geom_point(size=4, col="gray70", shape=21) + 
-  theme_void() +
-  scale_fill_manual(values = cols) +
-  geom_text(data = centroid, mapping = aes(x=lon_mean , y=lat_mean, label=HUC2), size=8)
-  # scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
-ggsave(paste0(fig_dir, "/HUC2.png"), width=10, height=6)
+# centroid <- df %>% group_by(HUC2) %>% summarise(lon_mean=mean(LON_DD83), lat_mean=mean(LAT_DD83))
+# ggplot(df, aes(fill=HUC2, x=LON_DD83, y=LAT_DD83)) + 
+#   geom_polygon( data=MainStates, aes(x=long, y=lat, group=group), color="gray80", fill=NA ) +
+#   geom_point(size=4, col="gray70", shape=21) + 
+#   theme_void() +
+#   scale_fill_manual(values = cols) +
+#   geom_text(data = centroid, mapping = aes(x=lon_mean , y=lat_mean, label=HUC2), size=8)
+#   # scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
+# ggsave(paste0(fig_dir, "/HUC2.png"), width=10, height=6)
 
 
 
@@ -88,6 +88,17 @@ names(table(df$Omernik_II_code)[table(df$Omernik_II_code)<10]) # "10.2" "12.1" "
 
 
 
+# Add lake origin
+head(df)
+All_Dat <- read.csv("Formatted_Data/ISO_Imputed_Test_Data_ALL_LAKES.csv")
+All_Dat$Type <- All_Dat$LAKE_ORIGIN12
+All_Dat$Type[All_Dat$Type==1] <- "Artificial"
+All_Dat$Type[All_Dat$Type==0] <- "Natural"
+
+All_Dat_join <- All_Dat %>% dplyr::select(NLA12_ID, Type)
+# 1 = Manmade/reservoir; 0=natural
+
+df <- left_join(df, All_Dat_join)
 
 
 # Plot smoothed relationship between each predictor and each isotope by Omernik II
@@ -102,7 +113,8 @@ for(j in 1:length(preds)){
     ggplot(aes(x =  get(preds[j]) , y = Pred_D202_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
-    geom_point(size=2) + 
+    geom_point(aes(shape=Type), size=2) + 
+    scale_shape_manual(values = c(4, 1))+ 
     geom_smooth(span=.8, se=T, linewidth=2, alpha=0.3, col="red", method="loess")+
     # scale_colour_manual(values = cols4[i])+
     xlab(preds[j])
@@ -123,7 +135,8 @@ for(i in 1:length(unique(df$Omernik_II_code))){
             ggplot(aes(x =  get(preds[j]) , y = Pred_D202_origUnits, colour = Omernik_II_code, group = Omernik_II_code)) + 
             theme_minimal() +
             theme(text=element_text(size=20)) +
-            geom_point(size=2) + 
+            geom_point(aes(shape=Type), size=2) + 
+            scale_shape_manual(values = c(4, 1))+ 
             geom_smooth(span=1, se=T, linewidth=1.2, alpha=0.2)+
             scale_colour_manual(values = cols4[i])+
         xlab(preds[j])
@@ -146,7 +159,8 @@ for(j in 1:length(preds)){
     ggplot(aes(x =  get(pred_j) , y = Pred_D202_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
-    geom_point(size=2) + 
+    geom_point(aes(shape=Type), size=2) + 
+    scale_shape_manual(values = c(4, 1))+ 
     geom_smooth(span=.8, se=T, linewidth=2, alpha=0.3, col="red", method="loess")+
     # scale_colour_manual(values = cols4[i])+
     xlab(preds[j])+
@@ -170,7 +184,8 @@ for(j in 1:length(preds)){
       ggplot(aes(x =  get(pred_j) , y = Pred_D202_origUnits, colour = Omernik_II_code, group = Omernik_II_code)) + 
       theme_minimal() +
       theme(text=element_text(size=20)) +
-      geom_point(size=2) + 
+      geom_point(aes(shape=Type), size=2) + 
+      scale_shape_manual(values = c(4, 1))+ 
       geom_smooth(span=1, se=T, linewidth=1.2, alpha=0.2)+
       scale_colour_manual(values = cols4[i])+
       xlab(preds[j]) +
@@ -191,7 +206,8 @@ for(j in 1:length(preds)){
     ggplot(aes(x =  get(preds[j]) , y = Pred_D200_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
-    geom_point(size=2) + 
+    geom_point(aes(shape=Type), size=2) + 
+    scale_shape_manual(values = c(4, 1))+ 
     geom_smooth(span=.8, se=T, linewidth=2, alpha=0.3, col="red", method="loess")+
     # scale_colour_manual(values = cols4[i])+
     xlab(preds[j])
@@ -212,7 +228,8 @@ for(i in 1:length(unique(df$Omernik_II_code))){
       ggplot(aes(x =  get(preds[j]) , y = Pred_D200_origUnits, colour = Omernik_II_code, group = Omernik_II_code)) + 
       theme_minimal() +
       theme(text=element_text(size=20)) +
-      geom_point(size=2) + 
+      geom_point(aes(shape=Type), size=2) + 
+      scale_shape_manual(values = c(4, 1))+ 
       geom_smooth(span=1, se=T, linewidth=1.2, alpha=0.2)+
       scale_colour_manual(values = cols4[i])+
       xlab(preds[j])
@@ -233,7 +250,8 @@ for(j in 1:length(preds)){
     ggplot(aes(x =  get(pred_j) , y = Pred_D200_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
-    geom_point(size=2) + 
+    geom_point(aes(shape=Type), size=2) + 
+    scale_shape_manual(values = c(4, 1))+ 
     geom_smooth(span=.8, se=T, linewidth=2, alpha=0.3, col="red", method="loess")+
     # scale_colour_manual(values = cols4[i])+
     xlab(preds[j])+
@@ -257,7 +275,8 @@ for(j in 1:length(preds)){
       ggplot(aes(x =  get(pred_j) , y = Pred_D200_origUnits, colour = Omernik_II_code, group = Omernik_II_code)) + 
       theme_minimal() +
       theme(text=element_text(size=20)) +
-      geom_point(size=2) + 
+      geom_point(aes(shape=Type), size=2) + 
+      scale_shape_manual(values = c(4, 1))+ 
       geom_smooth(span=1, se=T, linewidth=1.2, alpha=0.2)+
       scale_colour_manual(values = cols4[i])+
       xlab(preds[j]) +
@@ -279,7 +298,8 @@ for(j in 1:length(preds)){
     ggplot(aes(x =  get(preds[j]) , y = Pred_D199_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
-    geom_point(size=2) + 
+    geom_point(aes(shape=Type), size=2) + 
+    scale_shape_manual(values = c(4, 1))+ 
     geom_smooth(span=.8, se=T, linewidth=2, alpha=0.3, col="red", method="loess")+
     # scale_colour_manual(values = cols4[i])+
     xlab(preds[j])
@@ -300,7 +320,8 @@ for(i in 1:length(unique(df$Omernik_II_code))){
       ggplot(aes(x =  get(preds[j]) , y = Pred_D199_origUnits, colour = Omernik_II_code, group = Omernik_II_code)) + 
       theme_minimal() +
       theme(text=element_text(size=20)) +
-      geom_point(size=2) + 
+      geom_point(aes(shape=Type), size=2) + 
+      scale_shape_manual(values = c(4, 1))+ 
       geom_smooth(span=1, se=T, linewidth=1.2, alpha=0.2)+
       scale_colour_manual(values = cols4[i])+
       xlab(preds[j])
@@ -321,7 +342,8 @@ for(j in 1:length(preds)){
     ggplot(aes(x =  get(pred_j) , y = Pred_D199_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
-    geom_point(size=2) + 
+    geom_point(aes(shape=Type), size=2) + 
+    scale_shape_manual(values = c(4, 1))+ 
     geom_smooth(span=.8, se=T, linewidth=2, alpha=0.3, col="red", method="loess")+
     # scale_colour_manual(values = cols4[i])+
     xlab(preds[j])+
@@ -345,7 +367,8 @@ for(j in 1:length(preds)){
       ggplot(aes(x =  get(pred_j) , y = Pred_D199_origUnits, colour = Omernik_II_code, group = Omernik_II_code)) + 
       theme_minimal() +
       theme(text=element_text(size=20)) +
-      geom_point(size=2) + 
+      geom_point(aes(shape=Type), size=2) + 
+      scale_shape_manual(values = c(4, 1))+ 
       geom_smooth(span=1, se=T, linewidth=1.2, alpha=0.2)+
       scale_colour_manual(values = cols4[i])+
       xlab(preds[j]) +
@@ -368,59 +391,59 @@ for(j in 1:length(preds)){
 
 
 
-
-HUC2_kp <- names(table(df$HUC2)[table(df$HUC2)>9])
-names(table(df$HUC2)[table(df$HUC2)<10]) # "6"  "13"
-
-df %>% group_by(HUC2) %>% summarise(cor(Pred_D202_origUnits, Precip8110Cat , method="spearman"))
-# HUC 10, 11 nonlinear
-
-
-# Just points
-df %>% filter(HUC2 %in% HUC2_kp[1:4]) %>% 
-  ggplot( aes(x = Precip8110Cat , y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
-  theme_minimal() +
-  theme(text=element_text(size=20)) +
-  geom_point(size=2)# + 
-  # geom_smooth(se=F, linewidth=1.2)
-
-# Do 3 at a time:
-# for(i in 1:length(HUC2_kp)){
-# print(df %>% filter(HUC2 %in% HUC2_kp[i]) %>% 
+# 
+# HUC2_kp <- names(table(df$HUC2)[table(df$HUC2)>9])
+# names(table(df$HUC2)[table(df$HUC2)<10]) # "6"  "13"
+# 
+# df %>% group_by(HUC2) %>% summarise(cor(Pred_D202_origUnits, Precip8110Cat , method="spearman"))
+# # HUC 10, 11 nonlinear
+# 
+# 
+# # Just points
+# df %>% filter(HUC2 %in% HUC2_kp[1:4]) %>% 
+#   ggplot( aes(x = Precip8110Cat , y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
+#   theme_minimal() +
+#   theme(text=element_text(size=20)) +
+#   geom_point(size=2)# + 
+#   # geom_smooth(se=F, linewidth=1.2)
+# 
+# # Do 3 at a time:
+# # for(i in 1:length(HUC2_kp)){
+# # print(df %>% filter(HUC2 %in% HUC2_kp[i]) %>% 
+# #   ggplot(aes(x = Precip8110Cat , y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
+# #   theme_minimal() +
+# #   theme(text=element_text(size=20)) +
+# #   geom_point(size=2) + 
+# #   geom_smooth(span=1, se=F, linewidth=1.2)+
+# #   scale_colour_manual(values = cols[i]))
+# # }
+# 
+# # **** Stopped here - using these to look at D202-precip relationships by HUC ****
+# for(i in 1:length(unique(df$HUC2))){
+#   print(df %>% filter(HUC2 %in% names(table(df$HUC2))[i]) %>% 
+#           ggplot(aes(x = Precip8110Cat , y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
+#           theme_minimal() +
+#           theme(text=element_text(size=20)) +
+#           geom_point(size=2) + 
+#           geom_smooth(span=1, se=F, linewidth=1.2)+
+#           scale_colour_manual(values = cols[i]))
+# }
+# 
+# 
+# 
+# 
+# # Points with smoothers
+# # Use span (0-1) to control wiggliness (higher is smoother)
+# df %>% filter(HUC2 %in% HUC2_kp) %>% 
 #   ggplot(aes(x = Precip8110Cat , y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
 #   theme_minimal() +
 #   theme(text=element_text(size=20)) +
 #   geom_point(size=2) + 
-#   geom_smooth(span=1, se=F, linewidth=1.2)+
-#   scale_colour_manual(values = cols[i]))
-# }
-
-# **** Stopped here - using these to look at D202-precip relationships by HUC ****
-for(i in 1:length(unique(df$HUC2))){
-  print(df %>% filter(HUC2 %in% names(table(df$HUC2))[i]) %>% 
-          ggplot(aes(x = Precip8110Cat , y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
-          theme_minimal() +
-          theme(text=element_text(size=20)) +
-          geom_point(size=2) + 
-          geom_smooth(span=1, se=F, linewidth=1.2)+
-          scale_colour_manual(values = cols[i]))
-}
-
-
-
-
-# Points with smoothers
-# Use span (0-1) to control wiggliness (higher is smoother)
-df %>% filter(HUC2 %in% HUC2_kp) %>% 
-  ggplot(aes(x = Precip8110Cat , y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
-  theme_minimal() +
-  theme(text=element_text(size=20)) +
-  geom_point(size=2) + 
-  geom_smooth(span=.9, se=F, linewidth=1.2)
-
-# Just smoothers
-df %>% filter(HUC2 %in% HUC2_kp) %>% 
-  ggplot(aes(x = Hg0DryDep, y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
-  theme_minimal() +
-  theme(text=element_text(size=20)) +
-  geom_smooth(span=.9, se=F, linewidth=1.2)
+#   geom_smooth(span=.9, se=F, linewidth=1.2)
+# 
+# # Just smoothers
+# df %>% filter(HUC2 %in% HUC2_kp) %>% 
+#   ggplot(aes(x = Hg0DryDep, y = Pred_D202_origUnits, colour = HUC2, group = HUC2)) + 
+#   theme_minimal() +
+#   theme(text=element_text(size=20)) +
+#   geom_smooth(span=.9, se=F, linewidth=1.2)
