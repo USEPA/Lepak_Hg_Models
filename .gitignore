@@ -51,8 +51,9 @@ vignettes/*.pdf
 /Slides/**
 /Weird_Data/**
 
-# Extra files in isotope directory
+# Extra working files
 /Code/Isotope_Models/Extra/**
+/Code/THg_Models/Extra/**
 
 *.zip
 *.tsv
