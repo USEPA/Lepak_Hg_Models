@@ -28,9 +28,13 @@ df_sf <- df %>% st_as_sf(coords = c("LON_DD83", "LAT_DD83"), crs="EPSG:4269")
 
 
 #### Use tigris package census maps, NAD83 ####
-# us_tig <- tigris::nation(year=2022)
 states_tig <- tigris::states(year=2022) %>% filter(!NAME %in% c("American Samoa", "Commonwealth of the Northern Mariana Islands", "Guam" , "United States Virgin Islands", "Puerto Rico", "Alaska", "Hawaii"))
 # states_tig$NAME[order(states_tig$NAME)]
+
+plot(states_tig["REGION"])
+ggplot() +
+  geom_sf(data = states_tig, fill = NA, color = gray(.5)) + theme_void()
+
 
 str(states_tig)
 
@@ -82,6 +86,7 @@ str(us.tig.list)
 
 
 # Calculate Voronoi Tesselation and tiles
+### **** To do: look into spherical voronoi calculations ************
 tesselation <- deldir(df$LON_DD83, df$LAT_DD83)
 tiles <- tile.list(tesselation)
 
@@ -131,15 +136,26 @@ plot(voronoi_poly)
 
 
 
-# Join clipped polys to data
+# Join voronoi polys to original data
+df_voronoi <- df %>% dplyr::mutate(id = dplyr::row_number())
 
-left_join(df_sf, voronoi_poly_clip)
+df_voronoi <- left_join(df_voronoi, voronoi_poly)
+str(df_voronoi)
+
+df_voronoi$geometry
+
+
+# Note also have df_sf with lake point geometry
+
+
+# Write ggplot2 code that plots the voronoi polygons, clipped to US boundary with lake points added (but whole voronoi polygon is kept)
 
 
 
 
 
-### ** Do this after the clustering - i.e., cluster the larger polygons and then clip
+##########################################################
+### ** Do this after the clustering - i.e., cluster the larger polygons and then clip ####
 ### ** Otherwise, get multipolygon associated with each lake
 # Clip the voronoi polys by US boundary using just largest polygon - but note contains GL and islands
 # voronoi_poly_clip <- st_intersection(voronoi_poly, us_tig) # Can do with islands as well
