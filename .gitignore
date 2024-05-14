@@ -39,7 +39,7 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# Output
+# Folders
 /Tables/**
 /Model_Output/**
 /Data/**
@@ -50,6 +50,9 @@ vignettes/*.pdf
 /Saved_Models/**
 /Slides/**
 /Weird_Data/**
+
+# Extra files in isotope directory
+/Code/Isotope_Models/Extra/**
 
 *.zip
 *.tsv
