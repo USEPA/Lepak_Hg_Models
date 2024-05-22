@@ -84,38 +84,18 @@ str(us.tig.list)
 
 
 
-# deldir package
-
-# How to do max radius like in ggplot2? Comes from ggforce package
-# # Plot with max radius around each point - now those point polygons are estimated?
-# ggplot(df, aes(x=LON_DD83, y=LAT_DD83, group = -1L)) +
-#   geom_voronoi_tile(aes(fill=Omernik_II),
-#                     max.radius = 1,
-#                     colour = "black",
-#                     bound=USA_bound) +
-#   geom_point(aes(x=LON_DD83,y=LAT_DD83)) +
-#   theme_void()+ 
-#   geom_polygon( data=USA, aes(x=long, y=lat, group=group), color="gray80", fill=NA )
-
-
 # Calculate Voronoi Tesselation and tiles
 ### **** To do: look into spherical voronoi calculations ************
-
-
-
-
-
-
 
 
 
 # Can use terra to do voronoi
 # https://stackoverflow.com/questions/47203587/r-delimit-a-voronoi-diagram-according-to-a-map
 # Suggested projecting to planar reference system - 
-# I think this may need to be done for NAD83 because it is geodetic?
+# Need to be done for NAD83 because it is geodetic?
 
 
-#### ***** Need to redo this using terra (see above) so that can give it a spatial object *********
+#### Using terra (see above) so that can give it a spatial object and project *********
 # Project to 6350
 # Note that 4269 is geodetic not projected
 # Project to 6350
@@ -133,8 +113,10 @@ plot(main_vect)
 vor_terra <- terra::voronoi(df_vect, bnd=main_vect)
 plot(vor_terra)
 
+### Need to do clustering on clipped polygons because polygons can touch outside the boundaries of the US, which we don't want 
 vor_terra_crp <- crop(vor_terra, main_vect)
 plot(vor_terra_crp)
+plot(df_vect, add=T)
 
 vor_ter_sf_proj <-  sf::st_as_sf(vor_terra_crp)
 
@@ -142,129 +124,93 @@ vor_ter_sf_proj <-  sf::st_as_sf(vor_terra_crp)
 vor_ter_sf <- st_transform(vor_ter_sf_proj, crs="EPSG:4269")
 
 
+# vor_ter_sf is data with voronoi polys
+# df_sf is data with points
+vor_ter_sf <- vor_ter_sf %>% arrange(NLA12_ID)
+df_sf <- df_sf %>% arrange(NLA12_ID)
+
+
+# Plot voronoi with points and polys colored by D199 prediction
+ggplot(data=vor_ter_sf, aes(fill=Pred_D199_origUnits)) + 
+  geom_sf(col="white") +
+  theme_void() +
+  theme(legend.position="bottom") +
+  geom_sf(data=df_sf, col="white", size=1)
+
+# Can also plot this way
 plot(vor_ter_sf["Pred_D199_origUnits"], axes=T, max.plot=16)
 
-str(vor_ter_sf)
-vor_ter_sf$geometry
 
-## Stopped here - Have cropped polygons created in planar geometry
-# It is slightly different from voronoi_poly_clip below
-# And note these are polygons, not multipolygons!
-
-
-### SUCCESS!!
-
-
-
-
-
-
-
-
-# tesselation <- deldir(df$LON_DD83, df$LAT_DD83)
-# tiles <- tile.list(tesselation)
-# 
-# plot(tiles, pch = 19,
-#      fillcol = hcl.colors(50, "Purple-Yellow"))
-# 
-# # Clip to US with deldir plot functions
-# plot(tiles, pch = 19,
-#      col.pts = "black",
-#      border = "white",
-#      fillcol = hcl.colors(50, "viridis"),
-#      clipp = us.tig.list)
-# 
-# # Clip to just largest polygon - drops islands
-# plot(tiles, pch = 19,
-#      col.pts = "black",
-#      border = "white",
-#      fillcol = hcl.colors(50, "viridis"),
-#      clipp = us.tig.list[[1]])
-# 
-# # str(tiles[[1]])
-# # The boundary of the cell is in the polygon defined by the x and y components.
-# 
-# 
-# 
-# # Convert tiles to sf polygon object 
-# voronoi_poly <- tiles %>%
-#   purrr::map(~{cbind(x = .$x, y = .$y)} %>%
-#                rbind(.[1,]) %>%
-#                list() %>%
-#                sf::st_polygon()) %>%
-#   sf::st_sfc() %>%
-#   sf::st_sf() %>%
-#   dplyr::mutate(id = dplyr::row_number())
-# 
-# st_crs(voronoi_poly) <- "EPSG:4269"
-# # NAD83 (EPSG:4269)
-
-
-str(voronoi_poly)
-plot(voronoi_poly)
-
-
-
-# Join voronoi polys to original data
-df_voronoi <- df %>% dplyr::mutate(id = dplyr::row_number())
-df_voronoi <- left_join(df_voronoi, voronoi_poly, by=join_by(id))
-str(df_voronoi)
-
-sf_voronoi <- st_as_sf(df_voronoi)
-str(sf_voronoi)
-
-# Note also have df_sf with lake point geometry
-
-
-
-# Clip the voronoi polys by US boundary using just largest polygon - but note contains GL and islands
-voronoi_poly_clip <- st_intersection(sf_voronoi, main_tig)
-# voronoi_poly_clip <- st_intersection(voronoi_poly, us_tig) # Can do with islands as well
-
-head(voronoi_poly_clip) # Still a multipolygon for each lake, even after clipping using single polygon
-names(voronoi_poly_clip)
-str(voronoi_poly_clip)
 
 
 # Plot 10 predictors, Omernik_II, HUC2, 3 isotope predictions spatially
 plot_vars <- c(preds, "Omernik_II", "HUC2", "Pred_D199_origUnits", "Pred_D200_origUnits", "Pred_D202_origUnits")
-plot(voronoi_poly_clip[plot_vars], max.plot=16)
+plot(vor_ter_sf[plot_vars], max.plot=16)
 
-### Need to do clustering on clipped polygons because polygons can touch outside the boundaries of the US, which we don't want (compare plots below)
-plot(voronoi_poly_clip["Pred_D199_origUnits"], max.plot=16)
-plot(sf_voronoi["Pred_D199_origUnits"], axes=T, max.plot=16)
-plot(df_sf, add=T)
 
-(df_sf$geometry)
+str(vor_ter_sf)
+vor_ter_sf$geometry
 
-voronoi_poly_clip$geometry
 
-### Need to figure out how this works with multipolygons
-# Drop polygons without a point inside them?
-# Maybe it's okay? But needs to not treat each polygon as if it's a separate observation and use the lake information twice
+
+
+#  **** To do?? ****
+# How to do max radius like in ggplot2? Comes from ggforce package
+# # Plot with max radius around each point - now those point polygons are estimated?
+# ggplot(df, aes(x=LON_DD83, y=LAT_DD83, group = -1L)) +
+#   geom_voronoi_tile(aes(fill=Omernik_II),
+#                     max.radius = 1,
+#                     colour = "black",
+#                     bound=USA_bound) +
+#   geom_point(aes(x=LON_DD83,y=LAT_DD83)) +
+#   theme_void()+ 
+#   geom_polygon( data=USA, aes(x=long, y=lat, group=group), color="gray80", fill=NA )
+
+
+
+## Have cropped polygons created in planar geometry
+# It is slightly different from voronoi_poly_clip from previous code (created with lat/longs)
+
+# And note these are polygons, not multipolygons!
+# Previously needed to figure out how clustering would work with multipolygons (need to drop pieces without a point inside them# Needs to not treat each polygon as if it's a separate observation and use the lake information twice)
+# But now I think it's not an issue
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Try SKATER algorithm in spdep package
 # https://www.dshkol.com/post/spatially-constrained-clustering-and-regionalization/
-nla_scaled <- voronoi_poly_clip %>% dplyr::select(all_of(preds)) %>% 
+nla_scaled <- vor_ter_sf %>% dplyr::select(all_of(preds)) %>% 
   st_drop_geometry() %>%
   mutate(across(.cols = Hg0DryDep:LOI_PERCENT,
                 .fns = ~scale(.))) 
-hist(nla_scaled$Hg0ryDep)
+hist(x=nla_scaled$Hg0DryDep)
 
 
 
-nla_nb <- poly2nb(as_Spatial(voronoi_poly_clip))
-nla_nb_noqueen <- poly2nb(as_Spatial(voronoi_poly_clip), queen = FALSE)
+nla_nb <- poly2nb(as_Spatial(vor_ter_sf))
+nla_nb_noqueen <- poly2nb(as_Spatial(vor_ter_sf), queen = FALSE)
+
+# plot(as_Spatial(vor_ter_sf), main = "With queen")
+# plot(nla_nb, coords = coordinates(as_Spatial(vor_ter_sf)), col="blue", add = TRUE)
+
 # Not really any difference between the two (no polys meet only at corner)
+# Prefer no queen so don't have clusters formed of polys meeting at diagonal
+plot(as_Spatial(vor_ter_sf), main = "Without queen")
+# plot(nla_nb, coords = coordinates(as_Spatial(vor_ter_sf)), col="blue", add = TRUE)
+plot(nla_nb_noqueen, coords = coordinates(as_Spatial(vor_ter_sf)), col="red", add = TRUE)
 
-# plot(as_Spatial(voronoi_poly_clip), main = "With queen")
-# plot(nla_nb, coords = coordinates(as_Spatial(voronoi_poly_clip)), col="blue", add = TRUE)
 
-#
-plot(as_Spatial(voronoi_poly_clip), main = "Without queen")
-# plot(nla_nb, coords = coordinates(as_Spatial(voronoi_poly_clip)), col="blue", add = TRUE)
-plot(nla_nb_noqueen, coords = coordinates(as_Spatial(voronoi_poly_clip)), col="red", add = TRUE)
+
 
 
 
