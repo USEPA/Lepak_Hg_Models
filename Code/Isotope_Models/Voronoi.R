@@ -14,6 +14,7 @@ library(terra)
 library(ggpubr)
 
 
+
 output_dir <- "Model_Output/Iso/"
 model_dir <- "Saved_Models/Iso/"
 fig_dir <- "Figures/Iso/"
@@ -80,11 +81,11 @@ main_tig <- st_cast(us_tig_union, "POLYGON")[1]
 
 # Convert sf object to df with polygon_ids
 # Best for plotting with deldir plot functions
-us_df <- sf_to_df(us_tig)
+# us_df <- sf_to_df(us_tig)
 # List of all individual polygons in US census map - with x-y coords
 # ***Not sure if I need this still***
-us.tig.list <- split(us_df, f=us_df$polygon_id )
-str(us.tig.list)
+# us.tig.list <- split(us_df, f=us_df$polygon_id )
+# str(us.tig.list)
 # The mainland is the first polygon 
 
 
@@ -110,12 +111,15 @@ df_sf_proj$geometry
 
 main_proj <- st_transform(main_tig, crs="EPSG:6350")
 
+# lakes
 df_vect <- vect(df_sf_proj)
 plot(df_vect)
 
+# US poly
 main_vect <- vect(main_proj)
 plot(main_vect)
 
+# tesselation
 vor_terra <- terra::voronoi(df_vect, bnd=main_vect)
 plot(vor_terra)
 
@@ -137,14 +141,13 @@ df_sf <- df_sf %>% arrange(NLA12_ID)
 
 
 # Find largest polygon for each multipolygon and replace its geometry with just that single polygon
-st_geometry_type(vor_ter_sf)
 unique(st_geometry_type(vor_ter_sf))
 
 # Four are multipolygons
 which(st_geometry_type(vor_ter_sf)=="MULTIPOLYGON")
 # 27 444 796 885
 
-# INELEGANT BUT DOES THE JOB
+# INELEGANT BUT DOES THE JOB: deal with each multipolygon manually
 
 # 27
 plot(st_geometry(vor_ter_sf)[27], border=gray(.5))
@@ -214,6 +217,8 @@ vor_ter_sf$geometry
 
 
 #  **** To do?? ****
+# *** This would be place to crop each polygon to a radius around the lake ***
+
 # How to do max radius like in ggplot2? Comes from ggforce package
 # # Plot with max radius around each point - now those point polygons are estimated?
 # ggplot(df, aes(x=LON_DD83, y=LAT_DD83, group = -1L)) +
@@ -254,10 +259,11 @@ nla_scaled <- vor_ter_sf %>% dplyr::select(all_of(preds)) %>%
                 .fns = ~scale(.))) 
 # hist(x=nla_scaled$Hg0DryDep)
 
+
 # ct_dat = vor_ter_sf
 # ct_scaled = nla_scaled
 
-
+# Construct neighbors list
 nla_nb <- poly2nb(as_Spatial(vor_ter_sf))
 # nla_nb_noqueen <- poly2nb(as_Spatial(vor_ter_sf), queen = FALSE)
 
@@ -274,132 +280,117 @@ plot(nla_nb, coords = coordinates(as_Spatial(vor_ter_sf)), col="blue", add = TRU
 plot(as_Spatial(vor_ter_sf), main = "Lake locations")
 plot(nla_nb, coords = coordinates(as_Spatial(df_sf)), col="red", add = TRUE)
 
-### Note it looks like Texas and NM polys may be touching that don't visually look connected
-# May be orphans from clip, but I thought that would be a multipolygon??
 
 
-# Run SKATER
-
-# 'nbcosts' provides distances for euclidian, manhattan, canberra, binary, minkowski, and mahalanobis, and defaults to euclidean if not specified
-# method = c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski", "mahalanobis")
-
-# Try first with euclidean distance
-costs_eucl <- nbcosts(nla_nb, data = nla_scaled, method = c("euclidean")) 
-# Shouldn't need to be scaled for mahalanobis
-
-# 'nb2listw' transforms the edge costs into spatial weights to supplement the neighbour list, and then is fed into 'mstree'. 
-nla_w_eucl <- nb2listw(nla_nb, costs_eucl, style="B") # style B is binary coding
-
-# 'mstree'  creates the minimal spanning tree that turns the adjacency graph into a subgraph with n nodes and n-1 edges
-nla_mst_eucl <- mstree(nla_w_eucl)
-
-# Edges with higher dissimilarity are removed sequentially until left with a spanning tree that takes the minimum sum of dissimilarities across all edges of the tree, hence minimum spanning tree. 
-plot(st_geometry(vor_ter_sf), border=gray(.5), main="Euclidean spanning tree")
-plot(nla_mst_eucl, coordinates(as_Spatial(df_sf)),col="blue", cex.lab=0.6, cex.circles=0.035, add=TRUE)
-
-
-
-# Once the minimum spanning tree is in place, the SKATER algorithm comes in to partition the MST. The paper details the algorithm in full for those interested, but in short it works by iteratively partitioning the graph by identifying which edge to remove to maximize the quality of resulting clusters as measured by the sum of the intercluster square deviations SSD. Regions that are similar to one another will have lower values. 
-# This is implemented via spdep::skater and the ncuts arg indicates the number of partitions to make, resulting in ncuts+1 groups.
-numclust <- 10
-clus10_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
-
-numclust <- 20
-clus20_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
-
-numclust <- 25
-clus25_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
-
-
-### groups size
-table(clus10_eucl$groups)
-table(clus20_eucl$groups)
-table(clus25_eucl$groups)
-
-clusters <- vor_ter_sf %>% mutate(Euc10 = as.factor(clus10_eucl$groups),
-                                  Euc20 = as.factor(clus20_eucl$groups),
-                                  Euc25 = as.factor(clus25_eucl$groups))
-
-plot(clusters['Euc10'], main = "Euclidean - 10")
-plot(clusters['Euc20'], main = "Euclidean - 20")
-plot(clusters['Euc25'], main = "Euclidean - 25")
-
+# 20 colors for plotting
 cols2 <- sequential_hcl(5, palette = "Light Grays")
 cols3 <- qualitative_hcl(17, palette = "Dark 3")
 set.seed(5)
 cols <- sample(c(cols3, cols2[-c(4,5)]))
 
-# cols4 <- sequential_hcl(3, palette = "Light Grays")[-1]
-# cols5 <- qualitative_hcl(10, palette = "Dark 3")
-# set.seed(20)
-# cols10 <- sample(c(cols4, cols5))
 
-# Plot voronoi with points and polys colored by cluster
-e10polys <- ggplot() +
-  geom_sf(data=clusters, aes(fill=Euc10), col="white") +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75) +
-  scale_fill_manual(values = cols)
 
-e10states <- ggplot() + 
-  geom_sf(data=clusters, aes(fill=Euc10), col=NA) +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75) +
-  geom_sf(data=states_tig, col="white", fill=NA) +
-  scale_fill_manual(values = cols)
 
-# 20
-e20polys <- ggplot() +
-  geom_sf(data=clusters, aes(fill=Euc20), col="white") +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75)+
-  scale_fill_manual(values = cols)
+# Run SKATER #####
 
-e20states <- ggplot() + 
-  geom_sf(data=clusters, aes(fill=Euc20), col=NA) +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75) +
-  geom_sf(data=states_tig, col="white", fill=NA)+
-  scale_fill_manual(values = cols)
+# 'nbcosts' provides distances for euclidian, manhattan, canberra, binary, minkowski, and mahalanobis, and defaults to euclidean if not specified
+# method = c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski", "mahalanobis")
 
-e20states
+# Edge costs/distances - Try first with euclidean distance
+costs_eucl <- nbcosts(nla_nb, data = nla_scaled, method = c("euclidean"))
+# Shouldn't need to be scaled for mahalanobis
 
-# 25
-ggplot() +
-  geom_sf(data=clusters, aes(fill=Euc25), col="white") +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75)+
-  scale_fill_manual(values = cols)
+# 'nb2listw' transforms the edge costs into spatial weights to supplement the neighbour list, and then is fed into 'mstree'.
+nla_w_eucl <- nb2listw(nla_nb, costs_eucl, style="B") # style B is binary coding
 
-ggplot() + 
-  geom_sf(data=clusters, aes(fill=Euc25), col=NA) +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75) +
-  geom_sf(data=states_tig, col="white", fill=NA)+
-  scale_fill_manual(values = cols)
+# 'mstree'  creates the minimal spanning tree that turns the adjacency graph into a subgraph with n nodes and n-1 edges
+nla_mst_eucl <- mstree(nla_w_eucl)
+
+# Edges with higher dissimilarity are removed sequentially until left with a spanning tree that takes the minimum sum of dissimilarities across all edges of the tree, hence minimum spanning tree.
+plot(st_geometry(vor_ter_sf), border=gray(.5), main="Euclidean spanning tree")
+plot(nla_mst_eucl, coordinates(as_Spatial(df_sf)),col="blue", cex.lab=0.6, cex.circles=0.035, add=TRUE)
+
+
+
+# Once the minimum spanning tree is in place, the SKATER algorithm comes in to partition the MST. The paper details the algorithm in full for those interested, but in short it works by iteratively partitioning the graph by identifying which edge to remove to maximize the quality of resulting clusters as measured by the sum of the intercluster square deviations SSD. Regions that are similar to one another will have lower values.
+# This is implemented via spdep::skater and the ncuts arg indicates the number of partitions to make, resulting in ncuts+1 groups.
+numclust <- 10
+clus10_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
+# 
+# numclust <- 20
+# clus20_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
+# 
+# 
+# ### groups size
+# table(clus10_eucl$groups)
+# table(clus20_eucl$groups)
+# 
+# clusters <- vor_ter_sf %>% mutate(Euc10 = as.factor(clus10_eucl$groups),
+#                                   Euc20 = as.factor(clus20_eucl$groups))
+# 
+# plot(clusters['Euc10'], main = "Euclidean - 10")
+# plot(clusters['Euc20'], main = "Euclidean - 20")
+# 
+# 
+# 
+# 
+# # Plot voronoi with points and polys colored by cluster
+# e10polys <- ggplot() +
+#   geom_sf(data=clusters, aes(fill=Euc10), col="white") +
+#   theme_void() +
+#   theme(legend.position="bottom") +
+#   geom_sf(data=df_sf, col="white", size=.75) +
+#   scale_fill_manual(values = cols)
+# 
+# e10states <- ggplot() + 
+#   geom_sf(data=clusters, aes(fill=Euc10), col=NA) +
+#   theme_void() +
+#   theme(legend.position="bottom") +
+#   geom_sf(data=df_sf, col="white", size=.75) +
+#   geom_sf(data=states_tig, col="white", fill=NA) +
+#   scale_fill_manual(values = cols)
+# 
+# # 20
+# e20polys <- ggplot() +
+#   geom_sf(data=clusters, aes(fill=Euc20), col="white") +
+#   theme_void() +
+#   theme(legend.position="bottom") +
+#   geom_sf(data=df_sf, col="white", size=.75)+
+#   scale_fill_manual(values = cols)
+# 
+# e20states <- ggplot() + 
+#   geom_sf(data=clusters, aes(fill=Euc20), col=NA) +
+#   theme_void() +
+#   theme(legend.position="bottom") +
+#   geom_sf(data=df_sf, col="white", size=.75) +
+#   geom_sf(data=states_tig, col="white", fill=NA)+
+#   scale_fill_manual(values = cols)
+# 
+# e20states
+
+
 
 
 
 #### Try mahalanobis distance for mst and skater ####
 # Uses mahalanobis() function. Needs cov
 cov_pred <- cov(nla_scaled)
-costs_maha <- nbcosts(nb=nla_nb, data = nla_scaled, method = c("mahalanobis"), cov=cov_pred) 
+# Edge costs/distances
+costs_maha <- nbcosts(nb=nla_nb, data = nla_scaled, method = c("mahalanobis"), cov=cov_pred)
 # Columns don't actually need to be scaled to do mahalanobis, but won't matter
 
-
+# 'nb2listw' transforms the edge costs into spatial weights to supplement the neighbour list, and then is fed into 'mstree'. 
 nla_w_maha <- nb2listw(nla_nb, costs_maha, style="B") # style B is binary coding
 
+# 'mstree'  creates the minimal spanning tree that turns the adjacency graph into a subgraph with n nodes and n-1 edges
 nla_mst_maha <- mstree(nla_w_maha)
 
+# Edges with higher dissimilarity are removed sequentially until left with a spanning tree that takes the minimum sum of dissimilarities across all edges of the tree, hence minimum spanning tree. 
 plot(st_geometry(vor_ter_sf), border=gray(.5), main="Mahalanobis spanning tree")
 plot(nla_mst_maha, coordinates(as_Spatial(df_sf)),col="blue", cex.lab=0.6, cex.circles=0.035, add=TRUE)
 
+# Once the minimum spanning tree is in place, the SKATER algorithm comes in to partition the MST. The paper details the algorithm in full for those interested, but in short it works by iteratively partitioning the graph by identifying which edge to remove to maximize the quality of resulting clusters as measured by the sum of the intercluster square deviations SSD. Regions that are similar to one another will have lower values. 
+# This is implemented via spdep::skater and the ncuts arg indicates the number of partitions to make, resulting in ncuts+1 groups.
 numclust <- 10
 clus10_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
 
@@ -409,104 +400,183 @@ clus20_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = num
 numclust <- 30
 clus30_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
 
+numclust <- 40
+clus40_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
+
+numclust <- 100
+clus100_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
+
 table(clus10_maha$groups)
 table(clus20_maha$groups) # Too few in each cluster
 table(clus30_maha$groups) # Too few
+table(clus40_maha$groups) # Too few
+table(clus100_maha$groups) # Too few
 
-clusters <- clusters %>% mutate(Maha10 = as.factor(clus10_maha$groups),
-                                  Maha20 = as.factor(clus20_maha$groups),
-                                  Maha30 = as.factor(clus30_maha$groups))
 
-plot(clusters['Maha10'], main = "Mahalanobis - 10")
-plot(clusters['Maha20'], main = "Mahalanobis - 20")
-plot(clusters['Maha30'], main = "Mahalanobis - 30")
+clusters <- vor_ter_sf %>% mutate(Maha10 = as.factor(clus10_maha$groups),
+                                Maha20 = as.factor(clus20_maha$groups),
+                                Maha30 = as.factor(clus30_maha$groups),
+                                Maha40 = as.factor(clus40_maha$groups),
+                                Maha100 = as.factor(clus100_maha$groups))
+                              
+clusters
+  
+point_clusters <- df_sf %>% mutate(Maha10 = as.factor(clus10_maha$groups),
+                                   Maha20 = as.factor(clus20_maha$groups),
+                                   Maha30 = as.factor(clus30_maha$groups),
+                                   Maha40 = as.factor(clus40_maha$groups),
+                                   Maha100 = as.factor(clus100_maha$groups))
+
+# clusters <- clusters %>% mutate(Maha10 = as.factor(clus10_maha$groups),
+                                  # Maha20 = as.factor(clus20_maha$groups),
+                                  # Maha30 = as.factor(clus30_maha$groups))
+
+plot(clusters['Maha10'], main = "Mahalanobis - 10", key.pos=NULL, pal=rainbow(10))
+plot(clusters['Maha20'], main = "Mahalanobis - 20", key.pos=NULL, pal=rainbow(20))
+plot(clusters['Maha30'], main = "Mahalanobis - 30", key.pos=NULL, pal=rainbow(30))
+plot(clusters['Maha40'], main = "Mahalanobis - 40", key.pos=NULL, pal=rainbow(40))
+plot(clusters['Maha100'], main = "Mahalanobis - 100", key.pos=NULL, pal=rainbow(100))
+
+
+
+# ssw() returns sum of mahalanobis distances within each cluster, using pooled cov matrix. So could use elbow method
+plot(clus10_maha$ssw)
+plot(diff(clus10_maha$ssw))
+
+png(paste0(cluster_dir, "/Dissimilarity_vs_Clusters.png"), width = 600, height = 600)
+par(mfrow=c(2,1), las=1)
+plot(clus100_maha$ssw, xlab="Number clusters", ylab="Sum dissimilarity")
+abline(v=20, lty=2)
+plot(2:100, (-1)*diff(clus100_maha$ssw), xlab="Number clusters", ylab="Reduction in dissimilarity")
+abline(v=20, lty=2)
+dev.off()
+# Use 20 clusters
+
+
+
+# 20 colors for plotting
+cols2 <- sequential_hcl(5, palette = "Light Grays")
+cols3 <- qualitative_hcl(17, palette = "Dark 3")
+set.seed(13) # 5
+cols <- sample(c(cols3, cols2[-c(4,5)]))
 
 
 # Plot voronoi with points and polys colored by cluster
-m10polys <- ggplot() +
-  geom_sf(data=clusters, aes(fill=Maha10), col="white") +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75) +
-  scale_fill_manual(values = cols)
+# m10polys <- ggplot() +
+#   geom_sf(data=clusters, aes(fill=Maha10), col="white") +
+#   theme_void() +
+#   theme(legend.position="bottom") +
+#   geom_sf(data=df_sf, col="white", size=.75) +
+#   scale_fill_manual(values = cols)
+# 
+# m10states <- ggplot() + 
+#   geom_sf(data=clusters, aes(fill=Maha10), col=NA) +
+#   theme_void() +
+#   theme(legend.position="bottom") +
+#   geom_sf(data=df_sf, col="white", size=.75) +
+#   geom_sf(data=states_tig, col="white", fill=NA) +
+#   scale_fill_manual(values = cols)
 
-m10states <- ggplot() + 
-  geom_sf(data=clusters, aes(fill=Maha10), col=NA) +
-  theme_void() +
-  theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75) +
-  geom_sf(data=states_tig, col="white", fill=NA) +
-  scale_fill_manual(values = cols)
+# Centroid for labeling
+centroid <- point_clusters %>% group_by(Maha20) %>% summarise(centroid=st_union(geometry)) %>% st_centroid() 
+
 
 # 20
 m20polys <- ggplot() +
   geom_sf(data=clusters, aes(fill=Maha20), col="white") +
   theme_void() +
   theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75)+
-  scale_fill_manual(values = cols)
+  geom_sf(data=df_sf, col="white", size=1)+
+  scale_fill_manual(values = cols) +
+  geom_sf_text(data = centroid, aes(label = Maha20), size=12, alpha=0.85, colour="black", show.legend = F)
 
 m20states <- ggplot() + 
   geom_sf(data=clusters, aes(fill=Maha20), col=NA) +
   theme_void() +
   theme(legend.position="bottom") +
-  geom_sf(data=df_sf, col="white", size=.75) +
+  geom_sf(data=df_sf, col="white", size=1) +
   geom_sf(data=states_tig, col="white", fill=NA)+
-  scale_fill_manual(values = cols)
+  scale_fill_manual(values = cols)+
+  geom_sf_text(data = centroid, aes(label = Maha20), size=12, alpha=0.85, colour="black", show.legend = F)
 
-# 30
-# ggplot() +
-#   geom_sf(data=clusters, aes(fill=Maha30), col="white") +
-#   theme_void() +
-#   theme(legend.position="bottom") +
-#   geom_sf(data=df_sf, col="white", size=.75)+
-#   scale_fill_manual(values = cols)
-# 
-# ggplot() + 
-#   geom_sf(data=clusters, aes(fill=Maha30), col=NA) +
-#   theme_void() +
-#   theme(legend.position="bottom") +
-#   geom_sf(data=df_sf, col="white", size=.75) +
-#   geom_sf(data=states_tig, col="white", fill=NA)+
-#   scale_fill_manual(values = cols)
+# Plot Mahalanobis 20 cluster with lake and state polys
+ggarrange(m20polys + 
+            # ggtitle("Skater-Mahalanobis-20clust") + 
+            theme(legend.position="none",
+                  plot.title = element_text(hjust = 0.5, size=40),
+                  plot.margin = unit(c(0,0,0,0), 'lines')),
+          m20states + 
+            # ggtitle("Skater-Mahalanobis-20clust") +
+            theme(legend.position="none", 
+                  plot.title = element_text(hjust = 0.5, size=40),
+                  plot.margin = unit(c(0,0,0,0), 'lines')),
+          ncol=1, 
+          nrow=2)
+ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust.png"),
+       width=20, height=20)
 
 
-ggarrange(e10polys + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
-                                                     plot.title = element_text(hjust = 0.5, size=40),
-                                                     plot.margin = unit(c(0,0,0,0), 'lines')), 
-          e20polys + ggtitle("Skater-Euclidean-20clust") + theme(legend.position="none", 
-                                                     plot.title = element_text(hjust = 0.5, size=40),
-                                                     plot.margin = unit(c(0,0,0,0), 'lines')), 
-          m10polys + ggtitle("Skater-Mahalanobis-10clust") + theme(legend.position="none", 
-                                                       plot.title = element_text(hjust = 0.5, size=40),
-                                                       plot.margin = unit(c(0,0,0,0), 'lines')), 
-          m20polys + ggtitle("Skater-Mahalanobis-20clust") + theme(legend.position="none", 
-                                                       plot.title = element_text(hjust = 0.5, size=40),
-                                                       plot.margin = unit(c(0,0,0,0), 'lines')), 
-          ncol=2, nrow=2)
-ggsave(paste0(cluster_dir, "/SKATER_LakePolys.png"),
-       width=40, height=20)
-
-ggarrange(e10states + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
-                                                     plot.title = element_text(hjust = 0.5, size=40),
-                                                     plot.margin = unit(c(0,0,0,0), 'lines')), 
-          e20states + ggtitle("Skater-Euclidean-20clust") + theme(legend.position="none", 
-                                                     plot.title = element_text(hjust = 0.5, size=40),
-                                                     plot.margin = unit(c(0,0,0,0), 'lines')), 
-          m10states + ggtitle("Skater-Mahalanobis-10clust") + theme(legend.position="none", 
-                                                       plot.title = element_text(hjust = 0.5, size=40),
-                                                       plot.margin = unit(c(0,0,0,0), 'lines')), 
-          m20states + ggtitle("Skater-Mahalanobis-20clust") + theme(legend.position="none", 
-                                                       plot.title = element_text(hjust = 0.5, size=40),
-                                                       plot.margin = unit(c(0,0,0,0), 'lines')), 
-          ncol=2, nrow=2)
-ggsave(paste0(cluster_dir, "/SKATER_StatePolys.png"),
-       width=40, height=20)
        
 
 # Multiple plots
-plot_vars <- c(preds, "Omernik_II",  "Pred_D199_origUnits", "Euc20", "Euc10", "Maha10", "Maha20") #,  "Pred_D200_origUnits", "Pred_D202_origUnits")
-png(paste0(cluster_dir, "/Predictors_withClusters.png"),
+plot_vars <- c(preds, "Pred_D199_origUnits", "Pred_D200_origUnits", "Pred_D202_origUnits") #,  "Pred_D200_origUnits", "Pred_D202_origUnits") "Maha20", "Omernik_II",  
+png(paste0(cluster_dir, "/Predictors_and_Iso.png"),
     width=3000, height=2000, pointsize=40)
-plot(clusters[plot_vars], max.plot=16)
+plot(clusters[plot_vars], max.plot=15)
 dev.off()
+
+# Write clusters to original file
+clusters_sub <- st_drop_geometry(clusters) %>% dplyr::select(NLA12_ID, Maha10, Maha20, Maha30)
+df_clust_write <- left_join(df, clusters_sub)
+write.csv(df_clust_write, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"), row.names = F)
+
+# ggarrange(e10polys + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
+#                                                      plot.title = element_text(hjust = 0.5, size=40),
+#                                                      plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           e20polys + ggtitle("Skater-Euclidean-20clust") + theme(legend.position="none", 
+#                                                      plot.title = element_text(hjust = 0.5, size=40),
+#                                                      plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           m10polys + ggtitle("Skater-Mahalanobis-10clust") + theme(legend.position="none", 
+#                                                        plot.title = element_text(hjust = 0.5, size=40),
+#                                                        plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           m20polys + ggtitle("Skater-Mahalanobis-20clust") + theme(legend.position="none", 
+#                                                        plot.title = element_text(hjust = 0.5, size=40),
+#                                                        plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           ncol=2, nrow=2)
+# ggsave(paste0(cluster_dir, "/SKATER_LakePolys.png"),
+#        width=40, height=20)
+# 
+# 
+# ggarrange(e10polys + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
+#                                                                  plot.title = element_text(hjust = 0.5, size=40),
+#                                                                  plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           e20polys + ggtitle("Skater-Euclidean-20clust") + theme(legend.position="none", 
+#                                                                  plot.title = element_text(hjust = 0.5, size=40),
+#                                                                  plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           m10polys + ggtitle("Skater-Mahalanobis-10clust") + theme(legend.position="none", 
+#                                                                    plot.title = element_text(hjust = 0.5, size=40),
+#                                                                    plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           m20polys + ggtitle("Skater-Mahalanobis-20clust") + theme(legend.position="none", 
+#                                                                    plot.title = element_text(hjust = 0.5, size=40),
+#                                                                    plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           ncol=2, nrow=2)
+# ggsave(paste0(cluster_dir, "/SKATER_LakePolys.png"),
+#        width=40, height=20)
+
+
+
+# ggarrange(e10states + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
+#                                                      plot.title = element_text(hjust = 0.5, size=40),
+#                                                      plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           e20states + ggtitle("Skater-Euclidean-20clust") + theme(legend.position="none", 
+#                                                      plot.title = element_text(hjust = 0.5, size=40),
+#                                                      plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           m10states + ggtitle("Skater-Mahalanobis-10clust") + theme(legend.position="none", 
+#                                                        plot.title = element_text(hjust = 0.5, size=40),
+#                                                        plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           m20states + ggtitle("Skater-Mahalanobis-20clust") + theme(legend.position="none", 
+#                                                        plot.title = element_text(hjust = 0.5, size=40),
+#                                                        plot.margin = unit(c(0,0,0,0), 'lines')), 
+#           ncol=2, nrow=2)
+# ggsave(paste0(cluster_dir, "/SKATER_StatePolys.png"),
+#        width=40, height=20)
