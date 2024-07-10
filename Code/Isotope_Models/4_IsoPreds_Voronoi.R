@@ -283,10 +283,10 @@ plot(nla_nb, coords = coordinates(as_Spatial(df_sf)), col="red", add = TRUE)
 
 
 # 20 colors for plotting
-cols2 <- sequential_hcl(5, palette = "Light Grays")
-cols3 <- qualitative_hcl(17, palette = "Dark 3")
-set.seed(5)
-cols <- sample(c(cols3, cols2[-c(4,5)]))
+# cols2 <- sequential_hcl(5, palette = "Light Grays")
+# cols3 <- qualitative_hcl(17, palette = "Dark 3")
+# set.seed(5)
+# cols <- sample(c(cols3, cols2[-c(4,5)]))
 
 
 
@@ -297,25 +297,25 @@ cols <- sample(c(cols3, cols2[-c(4,5)]))
 # method = c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski", "mahalanobis")
 
 # Edge costs/distances - Try first with euclidean distance
-costs_eucl <- nbcosts(nla_nb, data = nla_scaled, method = c("euclidean"))
+# costs_eucl <- nbcosts(nla_nb, data = nla_scaled, method = c("euclidean"))
 # Shouldn't need to be scaled for mahalanobis
 
 # 'nb2listw' transforms the edge costs into spatial weights to supplement the neighbour list, and then is fed into 'mstree'.
-nla_w_eucl <- nb2listw(nla_nb, costs_eucl, style="B") # style B is binary coding
+# nla_w_eucl <- nb2listw(nla_nb, costs_eucl, style="B") # style B is binary coding
 
 # 'mstree'  creates the minimal spanning tree that turns the adjacency graph into a subgraph with n nodes and n-1 edges
-nla_mst_eucl <- mstree(nla_w_eucl)
+# nla_mst_eucl <- mstree(nla_w_eucl)
 
 # Edges with higher dissimilarity are removed sequentially until left with a spanning tree that takes the minimum sum of dissimilarities across all edges of the tree, hence minimum spanning tree.
-plot(st_geometry(vor_ter_sf), border=gray(.5), main="Euclidean spanning tree")
-plot(nla_mst_eucl, coordinates(as_Spatial(df_sf)),col="blue", cex.lab=0.6, cex.circles=0.035, add=TRUE)
+# plot(st_geometry(vor_ter_sf), border=gray(.5), main="Euclidean spanning tree")
+# plot(nla_mst_eucl, coordinates(as_Spatial(df_sf)),col="blue", cex.lab=0.6, cex.circles=0.035, add=TRUE)
 
 
 
 # Once the minimum spanning tree is in place, the SKATER algorithm comes in to partition the MST. The paper details the algorithm in full for those interested, but in short it works by iteratively partitioning the graph by identifying which edge to remove to maximize the quality of resulting clusters as measured by the sum of the intercluster square deviations SSD. Regions that are similar to one another will have lower values.
 # This is implemented via spdep::skater and the ncuts arg indicates the number of partitions to make, resulting in ncuts+1 groups.
-numclust <- 10
-clus10_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
+# numclust <- 10
+# clus10_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
 # 
 # numclust <- 20
 # clus20_eucl <- skater(edges = nla_mst_eucl[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("euclidean"))
@@ -400,8 +400,8 @@ clus20_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = num
 numclust <- 30
 clus30_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
 
-numclust <- 40
-clus40_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
+# numclust <- 40
+# clus40_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
 
 numclust <- 100
 clus100_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
@@ -409,14 +409,14 @@ clus100_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = nu
 table(clus10_maha$groups)
 table(clus20_maha$groups) # Too few in each cluster
 table(clus30_maha$groups) # Too few
-table(clus40_maha$groups) # Too few
+# table(clus40_maha$groups) # Too few
 table(clus100_maha$groups) # Too few
 
 
 clusters <- vor_ter_sf %>% mutate(Maha10 = as.factor(clus10_maha$groups),
                                 Maha20 = as.factor(clus20_maha$groups),
                                 Maha30 = as.factor(clus30_maha$groups),
-                                Maha40 = as.factor(clus40_maha$groups),
+                                # Maha40 = as.factor(clus40_maha$groups),
                                 Maha100 = as.factor(clus100_maha$groups))
                               
 clusters
@@ -424,7 +424,7 @@ clusters
 point_clusters <- df_sf %>% mutate(Maha10 = as.factor(clus10_maha$groups),
                                    Maha20 = as.factor(clus20_maha$groups),
                                    Maha30 = as.factor(clus30_maha$groups),
-                                   Maha40 = as.factor(clus40_maha$groups),
+                                   # Maha40 = as.factor(clus40_maha$groups),
                                    Maha100 = as.factor(clus100_maha$groups))
 
 # clusters <- clusters %>% mutate(Maha10 = as.factor(clus10_maha$groups),
@@ -434,7 +434,7 @@ point_clusters <- df_sf %>% mutate(Maha10 = as.factor(clus10_maha$groups),
 plot(clusters['Maha10'], main = "Mahalanobis - 10", key.pos=NULL, pal=rainbow(10))
 plot(clusters['Maha20'], main = "Mahalanobis - 20", key.pos=NULL, pal=rainbow(20))
 plot(clusters['Maha30'], main = "Mahalanobis - 30", key.pos=NULL, pal=rainbow(30))
-plot(clusters['Maha40'], main = "Mahalanobis - 40", key.pos=NULL, pal=rainbow(40))
+# plot(clusters['Maha40'], main = "Mahalanobis - 40", key.pos=NULL, pal=rainbow(40))
 plot(clusters['Maha100'], main = "Mahalanobis - 100", key.pos=NULL, pal=rainbow(100))
 
 
@@ -529,6 +529,9 @@ dev.off()
 clusters_sub <- st_drop_geometry(clusters) %>% dplyr::select(NLA12_ID, Maha10, Maha20, Maha30)
 df_clust_write <- left_join(df, clusters_sub)
 write.csv(df_clust_write, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"), row.names = F)
+
+
+
 
 # ggarrange(e10polys + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
 #                                                      plot.title = element_text(hjust = 0.5, size=40),
