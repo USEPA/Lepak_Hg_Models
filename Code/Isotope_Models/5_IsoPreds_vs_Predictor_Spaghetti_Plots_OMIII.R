@@ -341,6 +341,7 @@ for(j in 1:length(preds)){
 
 
 ## Look at overall relationships by artificial/natural
+## *** Note: These aren't being saved currently, just plotting them for exploration.
 for(j in 1:length(preds)){
   dir.create(paste0(fig_dir, "LOESS_OMIII/D202/", preds[j]), recursive=T, showWarnings = FALSE) 
   

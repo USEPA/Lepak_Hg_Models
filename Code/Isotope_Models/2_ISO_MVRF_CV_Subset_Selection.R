@@ -1,4 +1,4 @@
-# Isotope fingerprint model 
+# This script estimates CV error for each RFE iteration, selects best model using 1-SE rule, refits final model to all training data, evaluates performance on holdout test set
 
 library(randomForestSRC) # 3.2.1
 library(tidyverse) # tidyverse_2.0.0
@@ -421,7 +421,6 @@ Top_MAE_Mod %>% ggplot(aes(x=D202, y=Pred_D202)) +
   theme(text=element_text(size=20)) +
   xlab("Observed D202") + ylab("Predicted D202")
 ggsave(paste0(fig_dir, "/D202_Best_MAE_CVPred_vs_Obs.png"), width=8, height=6)
-
 
 
 

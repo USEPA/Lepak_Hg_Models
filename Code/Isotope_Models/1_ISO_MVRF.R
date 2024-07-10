@@ -1,3 +1,5 @@
+# This script fits and tunes full isotope fingerprint model, then performs RFE
+
 library(randomForestSRC) # 3.2.1
 library(colorspace)
 # library(usmap)

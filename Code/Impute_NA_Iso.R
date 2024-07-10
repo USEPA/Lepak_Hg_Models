@@ -1,3 +1,6 @@
+# Create train-test splits and impute missing data for isotope lakes (all lakes used to help impute missing data for isotope lakes)
+
+
 library(readxl)
 library(stringr)
 library(missForest) # 1.5

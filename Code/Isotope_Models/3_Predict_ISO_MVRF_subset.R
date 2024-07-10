@@ -34,7 +34,7 @@ Isos <- c("d202_Avg", "D199_Avg", "D200_Avg", "D201_Avg", "D204_Avg")
 # SD    0.21384970 0.04734102  0.2993826
 
 
-# Read in imputed data for all 1112 lakes
+# Read in imputed data for all 1112 lakes (created in Impute_NA_Iso.R)
 All_Dat <- read.csv("Formatted_Data/ISO_Imputed_Test_Data_ALL_LAKES.csv")
 All_Dat$LOI_PERCENT <- All_Dat$LOI_PERCENT/100
 
