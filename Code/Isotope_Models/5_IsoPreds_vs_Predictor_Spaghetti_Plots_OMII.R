@@ -19,6 +19,10 @@ dir.create(paste0(fig_dir, "LOESS/D200/"), recursive=T, showWarnings = FALSE)
 df <- read.csv(paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24.csv"))
 df <- df %>% rename(WetLossConv=WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s)
 
+# Multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+# Note that for generating predictions, LOI needs to be kept as it was input into the model (with LOI divided an extra time by 100)
+df$LOI_PERCENT <- 100*df$LOI_PERCENT
+
 preds <- names(df)[2:11]
 
 head(df)

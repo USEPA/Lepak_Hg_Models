@@ -11,6 +11,14 @@ Preds_with_Clusters <- Preds_with_Clusters %>% rename(WetLossConv_Loss_of_solubl
 # This has LakeRole in it as well and can be joined
 
 
+## *** Note that LOI was unnecessarily divided by 100 an extra time in isotope models, which is how it appears in Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv, and is how it should be input into models and for generating the PDPs
+## But for visualizations it should be multiplied by 100 so that it is a proportion for better interpretation
+
+
+
+
+
+
 # Read in imputed data for all 1112 lakes (created in Impute_NA_Iso.R)
 # All_Dat <- read.csv("Formatted_Data/ISO_Imputed_Test_Data_ALL_LAKES.csv")
 # All_Dat$LOI_PERCENT <- All_Dat$LOI_PERCENT/100
@@ -145,6 +153,12 @@ res <- cbind(pred.grid, Iso_Mean_Preds)
 res$Pred_D199_origUnits <- ( res$Pred_D199_SD * Iso_stats$D199[2] ) + Iso_stats$D199[1]
 res$Pred_D200_origUnits <- ( res$Pred_D200_SD * Iso_stats$D200[2] ) + Iso_stats$D200[1]
 res$Pred_D202_origUnits <- ( res$Pred_D202_SD * Iso_stats$D202[2] ) + Iso_stats$D202[1]
+
+
+
+# For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+
+# if(pred.var == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
 
 par(mfrow=c(3,1))
 plot(Pred_D199_origUnits~Precip8110Cat, data=res, type="l", las=1, lwd=3)
