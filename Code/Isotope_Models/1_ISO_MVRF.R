@@ -37,6 +37,8 @@ Isos <- c("d202_Avg", "D199_Avg", "D200_Avg", "D201_Avg", "D204_Avg")
 # The processes governing D199 and D201 are the same. The processes governing D200 and D204 are the same. So please use d202, D199 and D200. 
 Isos_Mod <- c("D199_Avg", "D200_Avg", "d202_Avg")
 
+# NOTE THAT I SHOULD NOT HAVE DIVIDED BY 100 AGAIN HERE, AS IN THE THg, MeHg, and LOI models
+# LOI was already divided by 100, so now divided by 1000
 Train_Dat$LOI_PERCENT <- Train_Dat$LOI_PERCENT/100
 Test_Dat$LOI_PERCENT <- Test_Dat$LOI_PERCENT/100
 
