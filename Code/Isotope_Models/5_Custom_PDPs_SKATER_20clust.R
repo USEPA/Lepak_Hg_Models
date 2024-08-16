@@ -1,5 +1,6 @@
 library(randomForestSRC) # 3.2.1
 library(tidyverse) # tidyverse_2.0.0
+library(colorspace)
 
 output_dir <- "Model_Output/Iso/"
 model_dir <- "Saved_Models/Iso/"
@@ -23,13 +24,7 @@ Preds_with_Clusters <- Preds_with_Clusters %>% rename(WetLossConv_Loss_of_solubl
 ## But for visualizations it should be multiplied by 100 so that it is a proportion for better interpretation
 
 names(Preds_with_Clusters)
-# plot(Pred_D199_SD~Pred_D200_SD, data=Preds_with_Clusters)
-# plot(Pred_D199_SD~Pred_D202_SD, data=Preds_with_Clusters)
-# plot(Pred_D200_SD~Pred_D202_SD, data=Preds_with_Clusters)
-# 
-# plot(Obs_D199_SD~Obs_D200_SD, data=Preds_with_Clusters)
-# plot(Obs_D199_SD~Obs_D202_SD, data=Preds_with_Clusters)
-# plot(Obs_D200_SD~Obs_D202_SD, data=Preds_with_Clusters)
+
 
 
 # Read in imputed data for all 1112 lakes (created in Impute_NA_Iso.R)
@@ -50,14 +45,8 @@ Iso_stats$D202 <- c(mean(Train_Dat$Obs_D202_origUnits ), sd(Train_Dat$Obs_D202_o
 #             D199       D200       D202
 # Mean -0.01110351 0.07362958 -0.8311328
 # SD    0.21764874 0.04886975  0.2998654
-# Nearly the same original training set
 
-# Don't need these steps - this was for fitting model
-# Standardize isos in train set
-# Train_Dat$D199 <- (Train_Dat$D199_Avg-Iso_stats$D199[1]) / Iso_stats$D199[2]
-# Train_Dat$D200 <- (Train_Dat$D200_Avg-Iso_stats$D200[1]) / Iso_stats$D200[2]
-# Train_Dat$D202 <- (Train_Dat$d202_Avg-Iso_stats$D202[1]) / Iso_stats$D202[2]
-# 
+
 
 
 
@@ -71,11 +60,125 @@ preds <- rf.final$xvar.names # predictors
 # All_Dat_sub <- All_Dat %>% dplyr::select(NLA12_ID, all_of(preds), all_of(Isos), TrainTest)
 
 
-pdp_dat <- Preds_with_Clusters %>% dplyr::select(NLA12_ID, all_of(preds))
+pdp_dat <- Preds_with_Clusters %>% dplyr::select(NLA12_ID, Maha20, all_of(preds))
+
+table(pdp_dat$Maha20) # 15 have at least 10
 
 
 
-# Modifying code from pdp package
+
+
+#### Calculate mean predicted values for each isotope for all lakes together and by clusters ####
+
+# Modified pdp code from pdp package
+for(j in 1:length(preds)){
+
+  start.time <- Sys.time()
+  
+  print(j)
+  
+  pred.var <- preds[j] #"Precip8110Cat"
+  
+  pred.var.lab <- pred.var
+  if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+  
+ 
+  x <- pdp_dat[, pred.var]
+  
+  # Set limits of predictor x-axis
+  # lim.j <- round(quantile(x, probs=c(0.05, 0.95)), 6)
+  lim.j <- round(quantile(x, probs=c(0, 1)), 6)
+  
+  # Resolution of predictor on x-axis
+  pred.val <- seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/40)
+  names(pred.val) <- names(pred.var)
+  
+  # pred.val <- seq(from = min(x, na.rm = TRUE), to = max(x, na.rm = TRUE),
+                  # length = 40)
+  
+  pred.grid <- expand.grid(pred.val, KEEP.OUT.ATTRS = FALSE) 
+  names(pred.grid) <- pred.var
+
+  
+  # i is index for x-value
+  Iso_Mean_Preds <- NULL
+  for(i in seq_len(nrow(pred.grid))){
+    temp <- pdp_dat
+    
+    # replace variable of interest with single value of interest, leave rest of predictors as-is
+    temp[, pred.var] <- pred.grid[i, pred.var] 
+    rf_predict_All <- predict(rf.final, newdata=temp)
+    
+    Lake_Preds_i <- data.frame(D199_pred = rf_predict_All$regrOutput$D199$predicted, 
+                               D200_pred = rf_predict_All$regrOutput$D200$predicted,
+                               D202_pred = rf_predict_All$regrOutput$D202$predicted,
+                               Maha20 = pdp_dat$Maha20,
+                               NLA12_ID = pdp_dat$NLA12_ID)
+    
+    # Mean predicted isos in SD at x-value
+    iso_mean_preds_temp <- data.frame(Pred_D199_SD = mean(Lake_Preds_i$D199_pred), 
+                                      Pred_D200_SD = mean(Lake_Preds_i$D200_pred),
+                                      Pred_D202_SD = mean(Lake_Preds_i$D202_pred))
+    
+    cl_iso_mean_preds_temp_jn <- list()
+    
+    # Mean predicted isos in SD at x-value for each cluster
+    for(k in seq_len(length(unique(Lake_Preds_i$Maha20))) ){
+      
+      cl <- sort(unique(Lake_Preds_i$Maha20))[k]
+      
+      cluster_sub <- Lake_Preds_i %>% filter(Maha20==cl)
+      
+      cl_iso_mean_preds_temp <- data.frame(Pred_D199_SD = mean(cluster_sub$D199_pred),
+                                           Pred_D200_SD = mean(cluster_sub$D200_pred),
+                                           Pred_D202_SD = mean(cluster_sub$D202_pred))
+      
+      names(cl_iso_mean_preds_temp) <- c(paste0('Pred_D199_SD_Cluster',cl),
+                                         paste0('Pred_D200_SD_Cluster',cl),
+                                         paste0('Pred_D202_SD_Cluster',cl))
+      
+      cl_iso_mean_preds_temp_jn[[k]] <- cl_iso_mean_preds_temp
+    }
+    
+    cl_iso_mean_preds_temp_jn <- data.frame(do.call('cbind', cl_iso_mean_preds_temp_jn))
+    
+    # Join all-lake-mean-preds with cluster-level-mean-preds
+    join_iso_mean_preds <- cbind(iso_mean_preds_temp, cl_iso_mean_preds_temp_jn)
+
+    
+    Iso_Mean_Preds <- rbind(Iso_Mean_Preds, join_iso_mean_preds)
+  }
+  
+  end.time <- Sys.time()
+  print(end.time-start.time) # 14.79553 secs for all lakes, 1 predictor
+  
+  # Bind mean predictions back to pred.grid for plotting
+  res <- cbind(pred.grid, Iso_Mean_Preds)
+  
+  saveRDS(res, paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
+}
+    
+
+
+
+
+
+
+
+
+#### Make figures using output from previous loop ####
+
+# Cluster colors - matches 4_IsoPreds_Voronoi.R colors and map
+cols2 <- sequential_hcl(5, palette = "Light Grays")
+cols3 <- qualitative_hcl(17, palette = "Dark 3")
+set.seed(13) # 5
+cols <- sample(c(cols3, cols2[-c(4,5)]))
+
+
+# For cluster figs, keep all-lake reference lines?
+# Make y-range be across across all cluster mean predictions for each isotope-predictor?
+
+
 for(j in 1:length(preds)){
   print(j)
   
@@ -89,134 +192,122 @@ for(j in 1:length(preds)){
   dir.create(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab), recursive=T, showWarnings = FALSE) 
   dir.create(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab), recursive=T, showWarnings = FALSE) 
   
-  x <- pdp_dat[, pred.var]
   
-  # lim.j <- round(quantile(x, probs=c(0.05, 0.95)), 6)
-  lim.j <- round(quantile(x, probs=c(0, 1)), 6)
-  
-  pred.val <- seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/40)
-  names(pred.val) <- names(pred.var)
-  
-  # pred.val <- seq(from = min(x, na.rm = TRUE), to = max(x, na.rm = TRUE),
-                  # length = 40)
-  
-  pred.grid <- expand.grid(pred.val, KEEP.OUT.ATTRS = FALSE) 
-  names(pred.grid) <- pred.var
-  # pred.grid
-  
-  # start.time <- Sys.time()
-  
-  Iso_Mean_Preds <- NULL
-  for(i in seq_len(nrow(pred.grid))){
-    temp <- pdp_dat
-    
-    # replace variable of interest with single value of interest
-    temp[, pred.var] <- pred.grid[i, pred.var] 
-    rf_predict_All <- predict(rf.final, newdata=temp)
-    
-    # Predicted isos in SD
-    iso_preds_temp <- data.frame(Pred_D199_SD = mean(rf_predict_All$regrOutput$D199$predicted), 
-                                 Pred_D200_SD = mean(rf_predict_All$regrOutput$D200$predicted),
-                                 Pred_D202_SD = mean(rf_predict_All$regrOutput$D202$predicted))
-    
-    Iso_Mean_Preds <- rbind(Iso_Mean_Preds, iso_preds_temp)
-  }
-  
-  # end.time <- Sys.time()
-  # end.time-start.time # 14.79553 secs
-  
-  
-  # This should bind 3 yhat columns to pred.grid
-  res <- cbind(pred.grid, Iso_Mean_Preds)
+  # Read in PDP dat
+  res <- readRDS(paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
   
   # Predicted isos in original units
-  res$Pred_D199_origUnits <- ( res$Pred_D199_SD * Iso_stats$D199[2] ) + Iso_stats$D199[1]
-  res$Pred_D200_origUnits <- ( res$Pred_D200_SD * Iso_stats$D200[2] ) + Iso_stats$D200[1]
-  res$Pred_D202_origUnits <- ( res$Pred_D202_SD * Iso_stats$D202[2] ) + Iso_stats$D202[1]
+  res_origunit <- res
+  
+  # Transform appropriate columns
+  res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+  res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+  res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+
+  colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+  
+
+
+  
+  
   
   
   
   # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
   if(pred.var == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+  if(pred.var == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+  
+  # Calculate 95% interval of observed predictor values
+  x_dat <- pdp_dat %>% dplyr::select(one_of(pred.var))  # subset by cluster here in cluster loop
+  if(pred.var == "LOI_PERCENT") x_dat <- 100*x_dat
+  x_95_int <- quantile(x_dat[,1], c(.025, .975))
+  
+  # *** Note will need to subset x_dat to observations within cluster for cluster plots and recalculate x_95_int ***
   
 
-    
-  # par(mfrow=c(3,1))
-  # plot(Pred_D199_origUnits~Precip8110Cat, data=res, type="l", las=1, lwd=3)
-  # plot(Pred_D200_origUnits~Precip8110Cat, data=res, type="l", las=1, lwd=3)
-  # plot(Pred_D202_origUnits~Precip8110Cat, data=res, type="l", las=1, lwd=3)
-  # 
-  # plot(Pred_D199_origUnits~get(pred.var) , xlab=paste0(pred.var), data=res, type="l", las=1, lwd=3)
-  # plot(Pred_D200_origUnits~get(pred.var), xlab=paste0(pred.var) , data=res, type="l", las=1, lwd=3)
-  # plot(Pred_D202_origUnits~get(pred.var), xlab=paste0(pred.var) , data=res, type="l", las=1, lwd=3)
-  
-
-  res %>%
-    ggplot(aes(x =  get(pred.var) , y = Pred_D199_origUnits)) + 
+  # D199 all lakes - origUnit
+  res_origunit %>%
+    ggplot(aes(x =  get(pred.var) , y = Pred_D199_origUnits)) +
     theme_minimal() +
-    theme(text=element_text(size=20)) +
+    theme(text=element_text(size=20))+
+    annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
     geom_line(size=2) + 
     xlab(pred.var.lab) +
-    coord_cartesian(xlim = range(res[pred.var]), ylim = range(res$Pred_D199_origUnits)) 
+    coord_cartesian(xlim = range(res_origunit[pred.var]), 
+                    ylim = range(res_origunit$Pred_D199_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) 
   ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL.png"), width=10, height=6)
   
   
-  res %>%
+  # D200 all lakes - origUnit
+  res_origunit %>%
     ggplot(aes(x =  get(pred.var) , y = Pred_D200_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
+    annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
     geom_line(size=2) + 
     xlab(pred.var.lab) +
-    coord_cartesian(xlim = range(res[pred.var]), ylim = range(res$Pred_D200_origUnits)) 
+    coord_cartesian(xlim = range(res_origunit[pred.var]), 
+                    ylim = range(res_origunit$Pred_D200_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
   ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_ALL.png"), width=10, height=6)
   
   
-  res %>%
+  # D202 all lakes - origUnit
+  res_origunit %>%
     ggplot(aes(x =  get(pred.var) , y = Pred_D202_origUnits)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
+    annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
     geom_line(size=2) + 
     # scale_shape_manual(values = c(4, 1))+ 
     # geom_smooth(span=.8, se=F, linewidth=2, alpha=0.3, col="red", method="loess")+
     # geom_smooth(aes(group=Type, linetype=Type), span=.8, se=F, linewidth=1, alpha=0.2, col="red")+
     # scale_linetype_manual(name="Type", 
-                          # values = c("Artificial" = "dashed", "Natural" = "dotted"),
-                          # breaks=c("Artificial", "Natural")) +
+    # values = c("Artificial" = "dashed", "Natural" = "dotted"),
+    # breaks=c("Artificial", "Natural")) +
     xlab(pred.var.lab) +
-    coord_cartesian(xlim = range(res[pred.var]), ylim = range(res$Pred_D202_origUnits)) 
-    # theme(legend.key.size = unit(2,"line"))
+    coord_cartesian(xlim = range(res_origunit[pred.var]), 
+                    ylim = range(res_origunit$Pred_D202_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
   ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_ALL.png"), width=10, height=6)
   
   
-
-  # All 3 together on SD scale
-  res_long <- pivot_longer(res, cols ="Pred_D199_SD":"Pred_D202_origUnits", names_to = "Isotope", values_to = "Mean_Prediction")
+  # Pivot PDP in SD to long format
+  res_long <- pivot_longer(res, cols ="Pred_D199_SD":"Pred_D202_SD_Cluster20", names_to = "Isotope", values_to = "Mean_Prediction")
   
+  
+  # All isos all lakes - SD
   res_long %>% filter(Isotope %in% c("Pred_D199_SD", "Pred_D200_SD", "Pred_D202_SD")) %>% 
     ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
+    annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
     geom_line(size=2) + 
     xlab(pred.var.lab) +
-    coord_cartesian(xlim = range(res[pred.var]))
-  # , ylim = range(res$Pred_D202_origUnits)
-  # theme(legend.key.size = unit(2,"line"))
+    coord_cartesian(xlim = range(res[pred.var]))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
+  # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
   ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_ALL.png"), width=10, height=6)
-  
-  # res_long %>% filter(Isotope %in% c("Pred_D199_origUnits", "Pred_D200_origUnits", "Pred_D202_origUnits")) %>% 
-  #   ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
-  #   theme_minimal() +
-  #   theme(text=element_text(size=20)) +
-  #   geom_line(size=2) + 
-  #   xlab(pred.var.lab) +
-  #   coord_cartesian(xlim = range(res[pred.var]))
   
 }
 
-# Use same limits as original figures? 
-# Much narrower range than observed lakes
+
+
+# Much narrower range of mean predictions than individual lake predictions
 
 # , xlim = range(Preds_with_Clusters[pred.var]), ylim = range(Preds_with_Clusters$Pred_D202_origUnits)
+# theme(legend.key.size = unit(2,"line"))  
+
+
+
+
+
+
+
+
+
+
 
 
 # Serial - faster, likely due to overhead of creating clusters?
