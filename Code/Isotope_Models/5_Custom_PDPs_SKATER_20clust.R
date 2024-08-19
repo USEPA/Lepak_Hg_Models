@@ -175,6 +175,14 @@ set.seed(13) # 5
 cols <- sample(c(cols3, cols2[-c(4,5)]))
 
 
+pdp_dat$Cluster <- factor(pdp_dat$Maha20)
+
+Cl_kp <- names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)>9]) # 15 clusters with at least 10 lakes
+# "1"  "2"  "3"  "4"  "5"  "6"  "7"  "8"  "9"  "10" "11" "14" "15" "16" "19"
+
+names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)<10]) # "12" "13" "17" "18" "20"
+
+
 # For cluster figs, keep all-lake reference lines?
 # Make y-range be across across all cluster mean predictions for each isotope-predictor?
 
@@ -207,22 +215,18 @@ for(j in 1:length(preds)){
   colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
   
 
-
-  
-  
-  
-  
   
   # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
   if(pred.var == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
   if(pred.var == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+  
+  
   
   # Calculate 95% interval of observed predictor values
   x_dat <- pdp_dat %>% dplyr::select(one_of(pred.var))  # subset by cluster here in cluster loop
   if(pred.var == "LOI_PERCENT") x_dat <- 100*x_dat
   x_95_int <- quantile(x_dat[,1], c(.025, .975))
   
-  # *** Note will need to subset x_dat to observations within cluster for cluster plots and recalculate x_95_int ***
   
 
   # D199 all lakes - origUnit
@@ -231,8 +235,9 @@ for(j in 1:length(preds)){
     theme_minimal() +
     theme(text=element_text(size=20))+
     annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-    geom_line(size=2) + 
+    geom_line(linewidth=2) + 
     xlab(pred.var.lab) +
+    ylab("Mean D199 prediction") +
     coord_cartesian(xlim = range(res_origunit[pred.var]), 
                     ylim = range(res_origunit$Pred_D199_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) 
@@ -245,8 +250,9 @@ for(j in 1:length(preds)){
     theme_minimal() +
     theme(text=element_text(size=20)) +
     annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-    geom_line(size=2) + 
+    geom_line(linewidth=2) + 
     xlab(pred.var.lab) +
+    ylab("Mean D200 prediction") +
     coord_cartesian(xlim = range(res_origunit[pred.var]), 
                     ylim = range(res_origunit$Pred_D200_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
@@ -259,7 +265,7 @@ for(j in 1:length(preds)){
     theme_minimal() +
     theme(text=element_text(size=20)) +
     annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-    geom_line(size=2) + 
+    geom_line(linewidth=2) + 
     # scale_shape_manual(values = c(4, 1))+ 
     # geom_smooth(span=.8, se=F, linewidth=2, alpha=0.3, col="red", method="loess")+
     # geom_smooth(aes(group=Type, linetype=Type), span=.8, se=F, linewidth=1, alpha=0.2, col="red")+
@@ -267,6 +273,7 @@ for(j in 1:length(preds)){
     # values = c("Artificial" = "dashed", "Natural" = "dotted"),
     # breaks=c("Artificial", "Natural")) +
     xlab(pred.var.lab) +
+    ylab("Mean D202 prediction") +
     coord_cartesian(xlim = range(res_origunit[pred.var]), 
                     ylim = range(res_origunit$Pred_D202_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
@@ -279,16 +286,153 @@ for(j in 1:length(preds)){
   
   # All isos all lakes - SD
   res_long %>% filter(Isotope %in% c("Pred_D199_SD", "Pred_D200_SD", "Pred_D202_SD")) %>% 
+    mutate(Isotope=case_match(Isotope,
+               "Pred_D199_SD" ~ "D199",
+               "Pred_D200_SD" ~ "D200",
+               "Pred_D202_SD" ~ "D202")) %>% 
     ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
     annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-    geom_line(size=2) + 
+    geom_line(linewidth=2, aes(linetype=Isotope)) + 
+    scale_color_manual(values=c("black", "gray20", "gray40")) +
+    scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
     xlab(pred.var.lab) +
+    ylab("Mean prediction (SD)") +
     coord_cartesian(xlim = range(res[pred.var]))+
-    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
+    theme(legend.key.size = unit(3,"line"))  
   # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
   ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_ALL.png"), width=10, height=6)
+  
+  
+  # Loop for cluster plots
+  
+  for(i in 1:length(unique(pdp_dat$Maha20))){
+    
+    skater_i <- sort(unique(pdp_dat$Maha20))[i]
+    
+    if(skater_i %in% Cl_kp){
+      
+      # Subset pdp data to cluster and predictor
+      x_dat_cl <- pdp_dat %>% filter(Maha20 %in% skater_i) %>% dplyr::select(one_of(pred.var))
+      if(pred.var == "LOI_PERCENT") x_dat_cl <- 100*x_dat_cl
+      
+      # Calculate 95% interval of observed predictor values
+      x_95_int_cl <- quantile(x_dat_cl[,1], c(.025, .975))
+      
+
+      
+      
+      # D199 by cluster - origUnit
+      annotations199 <- data.frame(
+        xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.05,
+        ypos =  max(res_origunit[paste0("Pred_D199_origUnits_Cluster", skater_i)]),
+        annotateText = c(paste0("Cluster ", skater_i)))
+      # -diff(range(res_origunit[paste0("Pred_D199_origUnits_Cluster", skater_i)]))*.01
+
+            res_origunit %>%
+        ggplot(aes(x =  get(pred.var) , y = get(paste0("Pred_D199_origUnits_Cluster", skater_i)))) +
+        theme_minimal() +
+        theme(text=element_text(size=20))+
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        geom_line(linewidth=2) + 
+        xlab(pred.var.lab) +
+        ylab("Mean D199 prediction") +
+        coord_cartesian(xlim = range(res_origunit[pred.var]), 
+                        ylim = range(res_origunit[paste0("Pred_D199_origUnits_Cluster", skater_i)]))+
+        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+        geom_text(data=annotations199,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
+      ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_Cluster",  skater_i, ".png"), width=10, height=6)
+      
+      
+
+      
+      
+      # D200 by cluster - origUnit
+      annotations200 <- data.frame(
+        xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.05,
+        ypos =  max(res_origunit[paste0("Pred_D200_origUnits_Cluster", skater_i)]),
+        annotateText = c(paste0("Cluster ", skater_i)))
+      
+      res_origunit %>%
+        ggplot(aes(x =  get(pred.var) , y = get(paste0("Pred_D200_origUnits_Cluster", skater_i)))) +
+        theme_minimal() +
+        theme(text=element_text(size=20))+
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        geom_line(linewidth=2) + 
+        xlab(pred.var.lab) +
+        ylab("Mean D200 prediction") +
+        coord_cartesian(xlim = range(res_origunit[pred.var]), 
+                        ylim = range(res_origunit[paste0("Pred_D200_origUnits_Cluster", skater_i)]))+
+        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+        geom_text(data=annotations200,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
+      ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_Cluster",  skater_i, ".png"), width=10, height=6)
+
+      
+      
+      # D202 by cluster - origUnit
+      annotations202 <- data.frame(
+        xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.05,
+        ypos =  max(res_origunit[paste0("Pred_D202_origUnits_Cluster", skater_i)]),
+        annotateText = c(paste0("Cluster ", skater_i)))
+      
+      res_origunit %>%
+        ggplot(aes(x =  get(pred.var) , y = get(paste0("Pred_D202_origUnits_Cluster", skater_i)))) +
+        theme_minimal() +
+        theme(text=element_text(size=20))+
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        geom_line(linewidth=2) + 
+        xlab(pred.var.lab) +
+        ylab("Mean D202 prediction") +
+        coord_cartesian(xlim = range(res_origunit[pred.var]), 
+                        ylim = range(res_origunit[paste0("Pred_D202_origUnits_Cluster", skater_i)]))+
+        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+        geom_text(data=annotations202,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
+      ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_Cluster",  skater_i, ".png"), width=10, height=6)
+      
+
+      
+      
+      # All isos by cluster - SD
+      iso_dat_cl <- res_long %>% filter(Isotope %in% c(paste0("Pred_D199_SD_Cluster", skater_i), paste0("Pred_D200_SD_Cluster", skater_i), paste0("Pred_D202_SD_Cluster", skater_i)))
+      
+      annotations <- data.frame(
+        xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.06,
+        ypos =   max(iso_dat_cl$Mean_Prediction),
+        annotateText = c(paste0("Cluster ", skater_i)))
+      
+      
+      
+      iso_dat_cl %>% 
+        mutate(Isotope=case_match(Isotope,
+                                  paste0("Pred_D199_SD_Cluster", skater_i) ~ "D199",
+                                  paste0("Pred_D200_SD_Cluster", skater_i) ~ "D200",
+                                  paste0("Pred_D202_SD_Cluster", skater_i) ~ "D202")) %>% 
+        ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
+        theme_minimal() +
+        theme(text=element_text(size=20)) +
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
+        scale_color_manual(values=c("black", "gray20", "gray40")) +
+        scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+        xlab(pred.var.lab) +
+        ylab("Mean prediction (SD)") +
+        coord_cartesian(xlim = range(res[pred.var]))+
+        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+        theme(legend.key.size = unit(4,"line"))  +
+        geom_text(data=annotations,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
+      
+      # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
+      ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_Cluster", skater_i, ".png"), width=10, height=6)
+      
+
+    }
+  }
   
 }
 
