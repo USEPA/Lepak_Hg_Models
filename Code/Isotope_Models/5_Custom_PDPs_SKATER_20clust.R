@@ -122,7 +122,7 @@ for(j in 1:length(preds)){
     
     cl_iso_mean_preds_temp_jn <- list()
     
-    # Mean predicted isos in SD at x-value for each cluster
+    # k is cluster index; Mean predicted isos in SD at x-value for each cluster
     for(k in seq_len(length(unique(Lake_Preds_i$Maha20))) ){
       
       cl <- sort(unique(Lake_Preds_i$Maha20))[k]
@@ -298,12 +298,12 @@ for(j in 1:length(preds)){
     scale_color_manual(values=c("black", "gray20", "gray40")) +
     scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
     xlab(pred.var.lab) +
-    ylab("Mean prediction (SD)") +
+    ylab("Mean prediction (z)") +
     coord_cartesian(xlim = range(res[pred.var]))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
-    theme(legend.key.size = unit(3,"line"))  
+    theme(legend.key.size = unit(4,"line"))  # , legend.position="bottom"
+  ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_ALL.png"), width=12, height=6)
   # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
-  ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_ALL.png"), width=10, height=6)
   
   
   # Loop for cluster plots
@@ -331,7 +331,7 @@ for(j in 1:length(preds)){
         annotateText = c(paste0("Cluster ", skater_i)))
       # -diff(range(res_origunit[paste0("Pred_D199_origUnits_Cluster", skater_i)]))*.01
 
-            res_origunit %>%
+        res_origunit %>%
         ggplot(aes(x =  get(pred.var) , y = get(paste0("Pred_D199_origUnits_Cluster", skater_i)))) +
         theme_minimal() +
         theme(text=element_text(size=20))+
@@ -406,7 +406,6 @@ for(j in 1:length(preds)){
         annotateText = c(paste0("Cluster ", skater_i)))
       
       
-      
       iso_dat_cl %>% 
         mutate(Isotope=case_match(Isotope,
                                   paste0("Pred_D199_SD_Cluster", skater_i) ~ "D199",
@@ -421,14 +420,13 @@ for(j in 1:length(preds)){
         scale_color_manual(values=c("black", "gray20", "gray40")) +
         scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
         xlab(pred.var.lab) +
-        ylab("Mean prediction (SD)") +
+        ylab("Mean prediction (z)") +
         coord_cartesian(xlim = range(res[pred.var]))+
         geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
         theme(legend.key.size = unit(4,"line"))  +
         geom_text(data=annotations,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
-      
-      # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
-      ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_Cluster", skater_i, ".png"), width=10, height=6)
+      # , legend.position="bottom"
+      ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_Cluster", skater_i, ".png"), width=12, height=6)
       
 
     }
@@ -442,6 +440,7 @@ for(j in 1:length(preds)){
 
 # , xlim = range(Preds_with_Clusters[pred.var]), ylim = range(Preds_with_Clusters$Pred_D202_origUnits)
 # theme(legend.key.size = unit(2,"line"))  
+# , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
 
 
 
