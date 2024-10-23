@@ -555,10 +555,26 @@ plot(Residual~LAT_DD83, data=CV_Resids)
 dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
 dist_res <- as.matrix(dist(CV_Resids$Residual))
 mantel_test <- mantel(dists, dist_res, permutations=1000)
-mantel_test$signif # r=0.1, p=.001 There is spatial autocorrelation in residuals
+mantel_test$signif # r=0.1, p=.001 There is slight spatial autocorrelation in residuals
+
+# Try with Haversine spatial distance - same result
+library(geosphere)
+d.geo <- distm(cbind(CV_Resids$LON_DD83, CV_Resids$LAT_DD83), fun = distHaversine)
+dist.geo <-  as.dist(d.geo)
+mantel_test_geo <- mantel(dist.geo, dist_res, permutations=1000)
+mantel_test_geo
 
 
+cat_dists <- c(d.geo)
+cat_dists_res <- c(dist_res)
+rand <- sample(1:950625, 50000, replace=FALSE)
+plot(cat_dists[rand], cat_dists_res[rand])
 
+data.frame(Distance=cat_dists[rand], Residual=cat_dists_res[rand]) %>% ggplot( aes(x=Distance, y=Residual)) + 
+  geom_point() +
+  geom_smooth(method="loess", se=FALSE, span=0.75)
+# Average residual difference increases slightly after 2,000 km (1242 miles) apart
+# Note that the USA is ~4500 km across, ~2600 km n-s. So the residuals change half-way across the country e-w
 
 
 ##### Partial dependence ####
