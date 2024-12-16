@@ -46,8 +46,29 @@ Iso_stats$D202 <- c(mean(Train_Dat$Obs_D202_origUnits ), sd(Train_Dat$Obs_D202_o
 # Mean -0.01110351 0.07362958 -0.8311328
 # SD    0.21764874 0.04886975  0.2998654
 
+# Correlation among predictors - 4 moderate pairwise correlations (of 45 pairs)
+pred_vals <- Preds_with_Clusters[,2:11]
+cor_tab <- cor(pred_vals)
+plot(Precip8110Cat~RunoffCat, data= pred_vals)
+plot(WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s  ~Tmean8110Cat, data= pred_vals)
+plot(Hg0DryDep  ~Precip8110Cat , data= pred_vals)
+plot(Hg0DryDep  ~Tmean8110Cat , data= pred_vals)
 
 
+pred_resps <- Train_Dat[, c("Pred_D199_SD", "Pred_D200_SD", "Pred_D202_SD")]
+obs_resps <- Train_Dat[, c("Obs_D199_SD", "Obs_D200_SD", "Obs_D202_SD")]
+
+# Similar correlation between predicted iso values and observed values
+# Predicted iso values more highly correlated than obs
+cor(pred_resps)
+cor(obs_resps)
+
+# Are error correlated?
+errors <- pred_resps-obs_resps
+cor(errors)
+plot(Pred_D199_SD ~ Pred_D200_SD , data=errors) # moderate correlation
+plot(Pred_D199_SD ~ Pred_D202_SD , data=errors) # moderate correlation
+plot(Pred_D200_SD ~ Pred_D202_SD , data=errors) # low correlation
 
 
 # Model trained on all lakes with iso data
@@ -70,6 +91,10 @@ table(pdp_dat$Maha20) # 15 have at least 10
 
 #### Calculate mean predicted values for each isotope for all lakes together and by clusters ####
 
+# Modified to all save all lake-specific data for ICE curves
+
+
+
 # Modified pdp code from pdp package
 for(j in 1:length(preds)){
 
@@ -90,18 +115,21 @@ for(j in 1:length(preds)){
   lim.j <- round(quantile(x, probs=c(0, 1)), 6)
   
   # Resolution of predictor on x-axis
-  pred.val <- seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/40)
+  res <- 40 # Each grid step is 2.5% of the range of the variable
+  pred.val <- seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/res)
   names(pred.val) <- names(pred.var)
   
   # pred.val <- seq(from = min(x, na.rm = TRUE), to = max(x, na.rm = TRUE),
-                  # length = 40)
+                  # length = res)
   
   pred.grid <- expand.grid(pred.val, KEEP.OUT.ATTRS = FALSE) 
   names(pred.grid) <- pred.var
 
+  ### Calculate PDP/ICE data
+  Lake_Preds_Save <- NULL # Data frame of all lake-specific predictions at different x-vals (ICE)
+  Iso_Mean_Preds <- NULL # Data frame of mean predictions overall and by cluster (PDP)
   
   # i is index for x-value
-  Iso_Mean_Preds <- NULL
   for(i in seq_len(nrow(pred.grid))){
     temp <- pdp_dat
     
@@ -109,20 +137,27 @@ for(j in 1:length(preds)){
     temp[, pred.var] <- pred.grid[i, pred.var] 
     rf_predict_All <- predict(rf.final, newdata=temp)
     
-    Lake_Preds_i <- data.frame(D199_pred = rf_predict_All$regrOutput$D199$predicted, 
+    Lake_Preds_i <- data.frame(TempName = pred.grid[i, pred.var], # Placeholder for x variable 
+                               D199_pred = rf_predict_All$regrOutput$D199$predicted, 
                                D200_pred = rf_predict_All$regrOutput$D200$predicted,
                                D202_pred = rf_predict_All$regrOutput$D202$predicted,
                                Maha20 = pdp_dat$Maha20,
                                NLA12_ID = pdp_dat$NLA12_ID)
+    names(Lake_Preds_i)[1] <- pred.var # Add x-var name
     
-    # Mean predicted isos in SD at x-value
+    # Bind all lake-specific predictions here - save after i loop
+    Lake_Preds_Save <- rbind(Lake_Preds_Save, Lake_Preds_i)
+    
+    
+    # Calculate mean predicted isos in SD at x-value i across all lakes
     iso_mean_preds_temp <- data.frame(Pred_D199_SD = mean(Lake_Preds_i$D199_pred), 
                                       Pred_D200_SD = mean(Lake_Preds_i$D200_pred),
                                       Pred_D202_SD = mean(Lake_Preds_i$D202_pred))
     
-    cl_iso_mean_preds_temp_jn <- list()
     
-    # k is cluster index; Mean predicted isos in SD at x-value for each cluster
+    # Mean predicted isos in SD at x-value i for each cluster; k is cluster index
+    cl_iso_mean_preds_temp_jn <- list() # list to store mean predictions by cluster
+    
     for(k in seq_len(length(unique(Lake_Preds_i$Maha20))) ){
       
       cl <- sort(unique(Lake_Preds_i$Maha20))[k]
@@ -140,28 +175,42 @@ for(j in 1:length(preds)){
       cl_iso_mean_preds_temp_jn[[k]] <- cl_iso_mean_preds_temp
     }
     
-    cl_iso_mean_preds_temp_jn <- data.frame(do.call('cbind', cl_iso_mean_preds_temp_jn))
+    # Note modified object name here (added _df). Check that figures are still the same after change
+    cl_iso_mean_preds_temp_jn_df <- data.frame(do.call('cbind', cl_iso_mean_preds_temp_jn))
     
-    # Join all-lake-mean-preds with cluster-level-mean-preds
-    join_iso_mean_preds <- cbind(iso_mean_preds_temp, cl_iso_mean_preds_temp_jn)
+    # Join all-lake-mean-preds with cluster-level-mean-preds for i
+    join_iso_mean_preds <- cbind(iso_mean_preds_temp, cl_iso_mean_preds_temp_jn_df)
 
     
     Iso_Mean_Preds <- rbind(Iso_Mean_Preds, join_iso_mean_preds)
   }
+  # End loop through x-vals (pred.grid)
   
   end.time <- Sys.time()
-  print(end.time-start.time) # 14.79553 secs for all lakes, 1 predictor
+  print(end.time-start.time) # 20.14093  secs for all lakes, 1 predictor
   
-  # Bind mean predictions back to pred.grid for plotting
+  # Write all lake-specific predictions for ICE curves
+  saveRDS(Lake_Preds_Save, paste0(output_dir, "PDP/", pred.var.lab, "_ICE_dat.rds"))
+  
+  # Bind mean predictions back to pred.grid for saving and plotting
   res <- cbind(pred.grid, Iso_Mean_Preds)
   
   saveRDS(res, paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
 }
     
+# Same after change in line 178
+# res2 <- readRDS(paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
+# res1 <- readRDS(paste0(output_dir, "PDP/OLD/", pred.var.lab, "_PDP_dat.rds"))
+# sum(round(res1-res2, 14))
 
 
+#########################################################################
 
 
+# Note for update: when adding ICE curves, only do these for isotope figures separately, not plotting all 3 together. Perhaps just copy below loop for figures with ICE curves and edit to add ICE curves and save separately
+
+
+#########################################################################
 
 
 
