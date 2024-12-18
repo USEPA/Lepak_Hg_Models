@@ -20,16 +20,12 @@ Preds_with_Clusters <- Preds_with_Clusters %>% rename(WetLossConv_Loss_of_solubl
 # This has LakeRole in it as well and can be joined
 
 
-## *** Note that LOI was unnecessarily divided by 100 an extra time in isotope models, which is how it appears in Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv, and is how it should be input into models ** AND FOR GENERATING THE PDPs ** ****
+## *** Note that LOI was unnecessarily divided by 100 an extra time in isotope models (in 3_Predict_ISO_MVRF_subset.R), which is how it appears in Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv, and is how it should be input into models AND FOR GENERATING THE PDPs ****
 ## But for visualizations it should be multiplied by 100 so that it is a proportion for better interpretation
 
 names(Preds_with_Clusters)
 
 
-
-# Read in imputed data for all 1112 lakes (created in Impute_NA_Iso.R)
-# All_Dat <- read.csv("Formatted_Data/ISO_Imputed_Test_Data_ALL_LAKES.csv")
-# All_Dat$LOI_PERCENT <- All_Dat$LOI_PERCENT/100
 
 # Subset lakes with iso data (combine original train+test sets) used to train final-final model
 # unique(Preds_with_Clusters$LakeRole)
@@ -45,6 +41,8 @@ Iso_stats$D202 <- c(mean(Train_Dat$Obs_D202_origUnits ), sd(Train_Dat$Obs_D202_o
 #             D199       D200       D202
 # Mean -0.01110351 0.07362958 -0.8311328
 # SD    0.21764874 0.04886975  0.2998654
+# These are the same stats used to standardize training iso set for rf_sd73_FINALFINAL_SUBSET_TRAIN_ALL_LAKES.rds 
+# Only used to backtransform here
 
 # Correlation among predictors - 4 moderate pairwise correlations (of 45 pairs)
 pred_vals <- Preds_with_Clusters[,2:11]
@@ -63,7 +61,7 @@ obs_resps <- Train_Dat[, c("Obs_D199_SD", "Obs_D200_SD", "Obs_D202_SD")]
 cor(pred_resps)
 cor(obs_resps)
 
-# Are error correlated?
+# Are errors correlated?
 errors <- pred_resps-obs_resps
 cor(errors)
 plot(Pred_D199_SD ~ Pred_D200_SD , data=errors) # moderate correlation
@@ -107,7 +105,7 @@ for(j in 1:length(preds)){
   pred.var.lab <- pred.var
   if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
   
- 
+  # Obs values of predictor var
   x <- pdp_dat[, pred.var]
   
   # Set limits of predictor x-axis
@@ -115,7 +113,7 @@ for(j in 1:length(preds)){
   lim.j <- round(quantile(x, probs=c(0, 1)), 6)
   
   # Resolution of predictor on x-axis
-  res <- 40 # Each grid step is 2.5% of the range of the variable
+  res <- 40 # Each grid step is 2.5% of the range of the variable (could also do quantiles)
   pred.val <- seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/res)
   names(pred.val) <- names(pred.var)
   
@@ -160,10 +158,12 @@ for(j in 1:length(preds)){
     
     for(k in seq_len(length(unique(Lake_Preds_i$Maha20))) ){
       
+      # Cluster k
       cl <- sort(unique(Lake_Preds_i$Maha20))[k]
       
       cluster_sub <- Lake_Preds_i %>% filter(Maha20==cl)
       
+      # Calculate mean predicted isos in SD at x-value i in cluster k
       cl_iso_mean_preds_temp <- data.frame(Pred_D199_SD = mean(cluster_sub$D199_pred),
                                            Pred_D200_SD = mean(cluster_sub$D200_pred),
                                            Pred_D202_SD = mean(cluster_sub$D202_pred))
@@ -175,7 +175,6 @@ for(j in 1:length(preds)){
       cl_iso_mean_preds_temp_jn[[k]] <- cl_iso_mean_preds_temp
     }
     
-    # Note modified object name here (added _df). Check that figures are still the same after change
     cl_iso_mean_preds_temp_jn_df <- data.frame(do.call('cbind', cl_iso_mean_preds_temp_jn))
     
     # Join all-lake-mean-preds with cluster-level-mean-preds for i
@@ -192,13 +191,13 @@ for(j in 1:length(preds)){
   # Write all lake-specific predictions for ICE curves
   saveRDS(Lake_Preds_Save, paste0(output_dir, "PDP/", pred.var.lab, "_ICE_dat.rds"))
   
-  # Bind mean predictions back to pred.grid for saving and plotting
+  # Bind mean predictions with pred.grid for saving and plotting
   res <- cbind(pred.grid, Iso_Mean_Preds)
   
   saveRDS(res, paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
 }
     
-# Same after change in line 178
+# Same after name change in line 180
 # res2 <- readRDS(paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
 # res1 <- readRDS(paste0(output_dir, "PDP/OLD/", pred.var.lab, "_PDP_dat.rds"))
 # sum(round(res1-res2, 14))
@@ -223,6 +222,13 @@ cols3 <- qualitative_hcl(17, palette = "Dark 3")
 set.seed(13) # 5
 cols <- sample(c(cols3, cols2[-c(4,5)]))
 
+
+scale_color_KV <- function(...){
+  ggplot2:::manual_scale(
+    'color', 
+    values = setNames(cols, as.character(1:20))
+  )
+}
 
 pdp_dat$Cluster <- factor(pdp_dat$Maha20)
 
@@ -252,9 +258,16 @@ for(j in 1:length(preds)){
   
   # Read in PDP dat
   res <- readRDS(paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
+  # Read in lake-specific predictions for ICE curves
+  ICE_dat <- readRDS(paste0(output_dir, "PDP/", pred.var.lab, "_ICE_dat.rds"))
+  
   
   # Predicted isos in original units
   res_origunit <- res
+  ICE_origunit <- ICE_dat
+  
+  names(res_origunit)
+  names(ICE_origunit)
   
   # Transform appropriate columns
   res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
@@ -263,12 +276,22 @@ for(j in 1:length(preds)){
 
   colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
   
+  
+  # Transform appropriate columns
+  ICE_origunit <- ICE_origunit %>%  mutate(across(starts_with("D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+  ICE_origunit <- ICE_origunit %>%  mutate(across(starts_with("D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+  ICE_origunit <- ICE_origunit %>%  mutate(across(starts_with("D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+  
+  colnames(ICE_origunit)[2:4] <- c("Pred_D199_origUnits", "Pred_D200_origUnits", "Pred_D202_origUnits")
+  
 
   
   # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
   if(pred.var == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
   if(pred.var == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
   
+  if(pred.var == "LOI_PERCENT") ICE_dat$LOI_PERCENT <- 100*ICE_dat$LOI_PERCENT
+  if(pred.var == "LOI_PERCENT") ICE_origunit$LOI_PERCENT <- 100*ICE_origunit$LOI_PERCENT
   
   
   # Calculate 95% interval of observed predictor values
@@ -277,8 +300,15 @@ for(j in 1:length(preds)){
   x_95_int <- quantile(x_dat[,1], c(.025, .975))
   
   
+  # Odd/even lakes for plotting ICE curves (split b/c so many)
+  nlakes <- length(unique(ICE_origunit$NLA12_ID))
+  odds <- seq_len(nlakes) %% 2 
+  odd_lks <- unique(ICE_origunit$NLA12_ID)[odds == 1] 
+  evn_lks <- unique(ICE_origunit$NLA12_ID)[odds == 0] 
+  
+  
 
-  # D199 all lakes - origUnit
+  # D199 all lakes PDP - origUnit
   res_origunit %>%
     ggplot(aes(x =  get(pred.var) , y = Pred_D199_origUnits)) +
     theme_minimal() +
@@ -291,6 +321,38 @@ for(j in 1:length(preds)){
                     ylim = range(res_origunit$Pred_D199_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) 
   ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL.png"), width=10, height=6)
+  
+  # D199 all lakes PDP WITH ICE - origUnit remove rectangle
+  # Odd lakes
+  res_origunit %>%
+    ggplot(aes(x =  get(pred.var) , y = Pred_D199_origUnits)) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% odd_lks,], aes(x=get(pred.var), y = Pred_D199_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) + # , col="gray20"
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    ylab("D199 prediction") +
+    coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
+                    # ylim = range(res_origunit$Pred_D199_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
+    scale_color_KV() +
+    theme(legend.position="none")
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL_ICEcurvesOdd.png"), width=10, height=6)
+  # Even lakes
+  res_origunit %>%
+    ggplot(aes(x =  get(pred.var) , y = Pred_D199_origUnits)) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% evn_lks,], aes(x=get(pred.var), y = Pred_D199_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) +
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    ylab("D199 prediction") +
+    coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
+    # ylim = range(res_origunit$Pred_D199_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)+
+    scale_color_KV() +
+    theme(legend.position="none")
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL_ICEcurvesEven.png"), width=10, height=6)
   
   
   # D200 all lakes - origUnit
@@ -306,6 +368,39 @@ for(j in 1:length(preds)){
                     ylim = range(res_origunit$Pred_D200_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
   ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_ALL.png"), width=10, height=6)
+  
+  # D200 all lakes PDP WITH ICE - origUnit remove rectangle
+  # Odd lakes
+  res_origunit %>%
+    ggplot(aes(x =  get(pred.var) , y = Pred_D200_origUnits)) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% odd_lks,], aes(x=get(pred.var), y = Pred_D200_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) + # , col="gray20"
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    ylab("D200 prediction") +
+    coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
+    # ylim = range(res_origunit$Pred_D200_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
+    scale_color_KV() +
+    theme(legend.position="none")
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_ALL_ICEcurvesOdd.png"), width=10, height=6)
+  # Even lakes
+  res_origunit %>%
+    ggplot(aes(x =  get(pred.var) , y = Pred_D200_origUnits)) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% evn_lks,], aes(x=get(pred.var), y = Pred_D200_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) +
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    ylab("D200 prediction") +
+    coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
+    # ylim = range(res_origunit$Pred_D200_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)+
+    scale_color_KV() +
+    theme(legend.position="none")
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_ALL_ICEcurvesEven.png"), width=10, height=6)
+  
   
   
   # D202 all lakes - origUnit
@@ -328,6 +423,37 @@ for(j in 1:length(preds)){
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
   ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_ALL.png"), width=10, height=6)
   
+  # D202 all lakes PDP WITH ICE - origUnit remove rectangle
+  # Odd lakes
+  res_origunit %>%
+    ggplot(aes(x =  get(pred.var) , y = Pred_D202_origUnits)) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% odd_lks,], aes(x=get(pred.var), y = Pred_D202_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) + # , col="gray20"
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    ylab("D202 prediction") +
+    coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
+    # ylim = range(res_origunit$Pred_D202_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
+    scale_color_KV() +
+    theme(legend.position="none")
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_ALL_ICEcurvesOdd.png"), width=10, height=6)
+  # Even lakes
+  res_origunit %>%
+    ggplot(aes(x =  get(pred.var) , y = Pred_D202_origUnits)) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% evn_lks,], aes(x=get(pred.var), y = Pred_D202_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) +
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    ylab("D202 prediction") +
+    coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
+    # ylim = range(res_origunit$Pred_D202_origUnits))+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)+
+    scale_color_KV() +
+    theme(legend.position="none")
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_ALL_ICEcurvesEven.png"), width=10, height=6)
   
   # Pivot PDP in SD to long format
   res_long <- pivot_longer(res, cols ="Pred_D199_SD":"Pred_D202_SD_Cluster20", names_to = "Isotope", values_to = "Mean_Prediction")
