@@ -1,6 +1,10 @@
 library(randomForestSRC) # 3.2.1
 library(tidyverse) # tidyverse_2.0.0
 library(colorspace)
+library(foreach)
+library(doParallel)
+library(parallel)
+library(ggpubr)
 
 output_dir <- "Model_Output/Iso/"
 model_dir <- "Saved_Models/Iso/"
@@ -11,6 +15,8 @@ dir.create(paste0(fig_dir, "PDP_SKATER20/D199/"), recursive=T, showWarnings = FA
 dir.create(paste0(fig_dir, "PDP_SKATER20/D200/"), recursive=T, showWarnings = FALSE) 
 dir.create(paste0(fig_dir, "PDP_SKATER20/All3/"), recursive=T, showWarnings = FALSE) 
 
+dir.create(paste0(output_dir, "PDP/"), recursive=T, showWarnings = FALSE) 
+dir.create(paste0(output_dir, "PDP/Bivariate/"), recursive=T, showWarnings = FALSE) 
 
 
 # Predictions with spatial data and SKATER Clusters
@@ -89,7 +95,7 @@ table(pdp_dat$Maha20) # 15 have at least 10
 
 #### Calculate mean predicted values for each isotope for all lakes together and by clusters ####
 
-# Modified to all save all lake-specific data for ICE curves
+# Modified to save all lake-specific data for ICE curves
 
 
 
@@ -104,6 +110,7 @@ for(j in 1:length(preds)){
   
   pred.var.lab <- pred.var
   if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+  
   
   # Obs values of predictor var
   x <- pdp_dat[, pred.var]
@@ -203,13 +210,8 @@ for(j in 1:length(preds)){
 # sum(round(res1-res2, 14))
 
 
-#########################################################################
 
 
-# Note for update: when adding ICE curves, only do these for isotope figures separately, not plotting all 3 together. Perhaps just copy below loop for figures with ICE curves and edit to add ICE curves and save separately
-
-
-#########################################################################
 
 
 
@@ -455,6 +457,9 @@ for(j in 1:length(preds)){
     theme(legend.position="none")
   ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_ALL_ICEcurvesEven.png"), width=10, height=6)
   
+  
+  
+  # Plot all iso together - no ICE curves
   # Pivot PDP in SD to long format
   res_long <- pivot_longer(res, cols ="Pred_D199_SD":"Pred_D202_SD_Cluster20", names_to = "Isotope", values_to = "Mean_Prediction")
   
@@ -481,7 +486,9 @@ for(j in 1:length(preds)){
   # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
   
   
-  # Loop for cluster plots
+  
+  
+  # Loop for cluster plots - no ICE curves here
   
   for(i in 1:length(unique(pdp_dat$Maha20))){
     
@@ -609,13 +616,261 @@ for(j in 1:length(preds)){
   
 }
 
-
-
-# Much narrower range of mean predictions than individual lake predictions
+# Much narrower range of mean predictions than individual lake predictions - like because of interactions - see plots with ICE curves
 
 # , xlim = range(Preds_with_Clusters[pred.var]), ylim = range(Preds_with_Clusters$Pred_D202_origUnits)
 # theme(legend.key.size = unit(2,"line"))  
 # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
+
+
+
+
+
+# Bivariate PDPs
+
+
+cl <- makeCluster(10)
+doParallel::registerDoParallel(cl)
+
+start.time <- Sys.time()
+
+
+# for(j in 1:length(preds)){
+foreach(j=1:length(preds)) %dopar% {
+    
+  
+  print(j)
+  
+  pred.var <- preds[j] 
+  
+  pred.var.lab <- pred.var
+  if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+  
+  dir.create(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab)), recursive=T, showWarnings = FALSE) 
+  
+  other.vars <- preds[-j]
+  
+  for(w in 1:length(other.vars)){
+
+    print(w)
+    
+    pred.var.w <- other.vars[w]
+    
+    pred.var.lab2 <- pred.var.w
+    if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
+    
+    # Obs values of predictor vars
+    x <- pdp_dat[, pred.var]
+    y <- pdp_dat[, pred.var.w]
+    
+    # Resolution of predictor axes
+    res <-  20 # Each grid step is 5% of the range of the variable (could also do quantiles)
+    
+    # Set limits of predictor x-axis - mid 95% range (note that I did 90% range for THg and MeHg plots)
+    lim.j <- round(quantile(x, probs=c(0.025, 0.975)), 6)
+    pred.val <- seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/res)
+    grid.j <- data.frame(PlaceHold=pred.val)
+    names(grid.j) <- pred.var
+    
+    # Set limits of predictor y-axis - mid 95% range (note that I did 90% range for THg and MeHg plots)
+    lim.w <- round(quantile(y, probs=c(0.025, 0.975)), 6)
+    pred.val2 <- seq(lim.w[1],lim.w[2], (lim.w[2]-lim.w[1])/res)
+    grid.w <- data.frame(PlaceHold=pred.val2)
+    names(grid.w) <- pred.var.w
+    
+    pred.grid <- expand.grid(cbind(grid.j, grid.w), KEEP.OUT.ATTRS = FALSE) 
+
+    
+    
+    ### Calculate PDP data
+    Iso_Mean_Preds <- NULL # Data frame of mean predictions overall (PDP)
+    
+    # i is index for pred.grid row
+    for(i in seq_len(nrow(pred.grid))){
+      temp <- pdp_dat
+      
+      # replace variable of interest with two values of interest, leave rest of predictors as-is
+      temp[, pred.var] <- pred.grid[i, pred.var] 
+      temp[, pred.var.w] <- pred.grid[i, pred.var.w] 
+      
+      rf_predict_All <- predict(rf.final, newdata=temp)
+      
+      Lake_Preds_i <- data.frame(D199_pred = rf_predict_All$regrOutput$D199$predicted, 
+                                 D200_pred = rf_predict_All$regrOutput$D200$predicted,
+                                 D202_pred = rf_predict_All$regrOutput$D202$predicted,
+                                 Maha20 = pdp_dat$Maha20,
+                                 NLA12_ID = pdp_dat$NLA12_ID)
+  
+       
+      
+      # Calculate mean predicted isos in SD at x-value i across all lakes
+      iso_mean_preds_temp <- data.frame(Pred_D199_SD = mean(Lake_Preds_i$D199_pred), 
+                                        Pred_D200_SD = mean(Lake_Preds_i$D200_pred),
+                                        Pred_D202_SD = mean(Lake_Preds_i$D202_pred))
+      
+      
+      
+      
+      Iso_Mean_Preds <- rbind(Iso_Mean_Preds, iso_mean_preds_temp)
+    }
+  # End loop through x-vals and y-vals (pred.grid)
+  
+  
+  # Bind mean predictions with pred.grid for saving and plotting
+  res <- cbind(pred.grid, Iso_Mean_Preds)
+  
+  # saveRDS(res, paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
+  saveRDS(res, paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
+  }
+  
+}
+
+stopCluster(cl)
+
+end.time <- Sys.time()
+print(end.time-start.time) # 2.6 min for one combo (x90 = 234 min = 3.9 hr serial)
+# Took 3.12 hours in parallel
+
+###########
+
+
+
+  
+# Make bivariate figures using output from above code
+  
+for(j in 1:length(preds)){
+  print(j)
+  
+  pred.var <- preds[j] 
+  
+  pred.var.lab <- pred.var
+  if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+  
+  
+  dir.create(paste0(fig_dir, "PDP_SKATER20/D199/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
+  dir.create(paste0(fig_dir, "PDP_SKATER20/D200/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
+  dir.create(paste0(fig_dir, "PDP_SKATER20/D202/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
+  dir.create(paste0(fig_dir, "PDP_SKATER20/All3/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
+
+  
+    
+  other.vars <- preds[-j]
+  
+  for(w in 1:length(other.vars)){
+    
+    print(w)
+    
+    pred.var.w <- other.vars[w]
+    
+    pred.var.lab2 <- pred.var.w
+    if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
+    
+    
+  # Read in PDP dat
+  res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
+  
+  
+  # Predicted isos in original units
+  res_origunit <- res
+  
+  names(res_origunit)
+  
+  # Transform appropriate columns
+  res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+  res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+  res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+  
+  colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+  
+  
+  
+  
+  # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+  if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+  if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+  
+  
+  
+  # Observed values for 2 vars of interest
+  obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
+  if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
+  # x_95_int <- quantile(x_dat[,1], c(.025, .975))
+  
+  
+  names(res_origunit)
+  
+  
+  
+  # D199 all lakes PDP - origUnit
+  # Center D199 at 0 - others will be centered at the mean
+  # Also use coord_cartesian here because cuts off outer row otherwise
+  p199 <- res_origunit %>%
+    ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+    theme_minimal() +
+    coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+    # xlim(range(res_origunit[pred.var]))+
+    # ylim(range(res_origunit[pred.var.w])) +
+    geom_tile(aes(fill=Pred_D199_origUnits)) +
+    geom_contour(color = "white") +
+    # scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=mean(range(res_origunit$Pred_D199_origUnits)), alpha=1, rev=F) +
+    scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F) +
+    theme(text=element_text(size=20)) +
+    xlab(paste0(pred.var.lab)) +
+    ylab(paste0(pred.var.lab2)) +
+    geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+    # geom_point(aes(x =  get(pred.var), y = get(pred.var.w))) # Look to see where the data points are relative to tiles
+  p199
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D199/BIVARIATE_PLOTS/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_", pred.var.lab2, ".png"), width=7, height=5)
+
+  # D200 all lakes PDP - origUnit
+  p200 <- res_origunit %>%
+    ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+    theme_minimal() +
+    coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+    # xlim(range(res_origunit[pred.var]))+
+    # ylim(range(res_origunit[pred.var.w])) +
+    geom_tile(aes(fill=Pred_D200_origUnits)) +
+    geom_contour(color = "white") +
+    scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean(range(res_origunit$Pred_D200_origUnits)), alpha=1, rev=F) +
+    theme(text=element_text(size=20)) +
+    xlab(paste0(pred.var.lab)) +
+    ylab(paste0(pred.var.lab2)) +
+    geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+  # geom_point(aes(x =  get(pred.var), y = get(pred.var.w))) # Look to see where the data points are relative to tiles
+  p200
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D200/BIVARIATE_PLOTS/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_", pred.var.lab2, ".png"), width=7, height=5)
+  
+  # D202 all lakes PDP - origUnit
+  p202 <- res_origunit %>%
+    ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+    theme_minimal() +
+    coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+    # xlim(range(res_origunit[pred.var]))+
+    # ylim(range(res_origunit[pred.var.w])) +
+    geom_tile(aes(fill=Pred_D202_origUnits)) +
+    geom_contour(color = "white") +
+    scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean(range(res_origunit$Pred_D202_origUnits)), alpha=1, rev=F) +
+    theme(text=element_text(size=20)) +
+    xlab(paste0(pred.var.lab)) +
+    ylab(paste0(pred.var.lab2)) +
+    geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+  # geom_point(aes(x =  get(pred.var), y = get(pred.var.w))) # Look to see where the data points are relative to tiles
+  p202
+  ggsave(paste0(fig_dir, "PDP_SKATER20/D202/BIVARIATE_PLOTS/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_", pred.var.lab2, ".png"), width=7, height=5)
+  
+  # All isos PDP together
+  ggarrange(p199, p200, p202, 
+            # labels = c("A", "B", "C"),
+            ncol = 3, nrow = 1)
+  ggsave(paste0(fig_dir, "PDP_SKATER20/All3/BIVARIATE_PLOTS/", pred.var.lab, "/PDP_", pred.var.lab, "_", pred.var.lab2, ".png"), width=21, height=5)
+  }
+}
+
+  
+
+
+
+
 
 
 
@@ -632,9 +887,7 @@ for(j in 1:length(preds)){
 
 # Parallelizing likely only makes sense for bivariate PDPs
 
-# library(foreach)
-# library(doParallel)
-# library(parallel)
+
 # 
 # cl <- makeCluster(10) 
 # doParallel::registerDoParallel(cl)
