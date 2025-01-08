@@ -240,8 +240,6 @@ Cl_kp <- names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)>9]) # 15 clusters w
 names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)<10]) # "12" "13" "17" "18" "20"
 
 
-# For cluster figs, keep all-lake reference lines?
-# Make y-range be across across all cluster mean predictions for each isotope-predictor?
 
 
 for(j in 1:length(preds)){
@@ -621,6 +619,361 @@ for(j in 1:length(preds)){
 # , xlim = range(Preds_with_Clusters[pred.var]), ylim = range(Preds_with_Clusters$Pred_D202_origUnits)
 # theme(legend.key.size = unit(2,"line"))  
 # , ylim = range(res_long$Mean_Prediction) # Add back in for fixed axes
+
+
+
+#### Multi-panel figure for univariate PDPs ####
+# Cluster colors - matches 4_IsoPreds_Voronoi.R colors and map
+cols2 <- sequential_hcl(5, palette = "Light Grays")
+cols3 <- qualitative_hcl(17, palette = "Dark 3")
+set.seed(13) # 5
+cols <- sample(c(cols3, cols2[-c(4,5)]))
+
+pdp_dat$Cluster <- factor(pdp_dat$Maha20)
+
+Cl_kp <- names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)>9]) # 15 clusters with at least 10 lakes
+# "1"  "2"  "3"  "4"  "5"  "6"  "7"  "8"  "9"  "10" "11" "14" "15" "16" "19"
+
+names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)<10]) # "12" "13" "17" "18" "20"
+
+pred.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s", "Hg0DryDep")
+
+cl.order <- c("3", "8", "10", "5", "7", "1", "4", "15", "9", "16", "11", "14", "2", "19", "6")
+length(unique(cl.order))
+cl.order %in% Cl_kp
+
+
+# j is column, i is row
+# [j, 1]
+# [j, i+1]
+
+# list.all <- NULL # Initialize list of plots
+myplots <- vector('list', length(pred.order)*(length(cl.order)+1))
+
+
+
+for(j in 1:length(pred.order)){
+  
+  print(j)
+  
+
+  myplots[[1 + (j-1)*(length(cl.order)+1)]] <- local({
+  
+    j <- j
+    pred.var <- pred.order[j] 
+    
+    pred.var.lab <- pred.var
+    if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+    
+    
+    # Read in PDP dat
+    res <- readRDS(paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
+  
+    # Predicted isos in original units
+    res_origunit <- res
+    # Transform appropriate columns
+    res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+    res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+    res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+    colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+    
+    
+
+    # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+    if(pred.var == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+    # if(pred.var == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+    
+    
+    
+    # Calculate 95% interval of observed predictor values
+    x_dat <- pdp_dat %>% dplyr::select(one_of(pred.var))  # subset by cluster here in cluster loop
+    if(pred.var == "LOI_PERCENT") x_dat <- 100*x_dat
+    x_95_int <- quantile(x_dat[,1], c(.025, .975))
+    
+   
+    
+    # Plot all iso together - no ICE curves
+    # Pivot PDP in SD to long format
+    res_long <- pivot_longer(res, cols ="Pred_D199_SD":"Pred_D202_SD_Cluster20", names_to = "Isotope", values_to = "Mean_Prediction")
+    
+    
+    # All isos all lakes - SD
+    all_plot <- res_long %>% filter(Isotope %in% c("Pred_D199_SD", "Pred_D200_SD", "Pred_D202_SD")) %>% 
+      mutate(Isotope=case_match(Isotope,
+                                "Pred_D199_SD" ~ "D199",
+                                "Pred_D200_SD" ~ "D200",
+                                "Pred_D202_SD" ~ "D202")) 
+    
+    if(j==1){
+      p1 <- all_plot %>% 
+        ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
+        theme_classic() +
+        theme(text=element_text(size=32)) +
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+        geom_line(linewidth=2, aes(linetype=Isotope)) + 
+        scale_color_manual(values=c("black", "gray20", "gray40")) +
+        scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+        xlab(pred.var.lab) +
+        # ylab(paste0("All lakes: Isotope SD")) +
+        # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
+        ylab(paste(c(paste0("ALL LAKES"), paste0("Isotope SD")), collapse = '\n')) +
+        
+        coord_cartesian(xlim = range(res[pred.var]))+
+        geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
+        theme(legend.key.size = unit(4,"line"),
+              axis.title.x = element_blank(),
+              # legend.position="bottom",
+              legend.position="none",
+              plot.title = element_text(hjust = 0.5))  +
+        ggtitle(paste(pred.var.lab))+
+        scale_y_continuous(breaks = round(range(all_plot$Mean_Prediction), 2))
+      } else{  # no y-axis title
+        p1 <- all_plot %>% 
+          ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
+          theme_classic() +
+          theme(text=element_text(size=32)) +
+          annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+          geom_line(linewidth=2, aes(linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          xlab(pred.var.lab) +
+          # ylab(paste0("All lakes: Isotope SD")) +
+          # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
+          coord_cartesian(xlim = range(res[pred.var]))+
+          geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
+          theme(legend.key.size = unit(4,"line"),
+                axis.title.x = element_blank(),
+                # legend.position="bottom",
+                legend.position="none",
+                plot.title = element_text(hjust = 0.5),
+                axis.title.y = element_blank()
+                )  +
+          ggtitle(paste(pred.var.lab))+
+          scale_y_continuous(breaks = round(range(all_plot$Mean_Prediction), 2))
+    
+    }
+    
+
+  })
+
+  # Loop for cluster plots 
+  
+  for(i in 1:length(cl.order)){
+    
+    myplots[[1 + (j-1)*(length(cl.order)+1) + i]] <- local({
+    
+      j <- j
+      i <- i
+
+      ###### Need to repeat from above loop again to get to store properly
+      pred.var <- pred.order[j] 
+      
+      pred.var.lab <- pred.var
+      if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+      
+      # Read in PDP dat
+      res <- readRDS(paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
+      
+      # Predicted isos in original units
+      res_origunit <- res
+      # Transform appropriate columns
+      res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+      res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+      res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+      colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+      
+      # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+      if(pred.var == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+      # if(pred.var == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+
+      # Calculate 95% interval of observed predictor values
+      x_dat <- pdp_dat %>% dplyr::select(one_of(pred.var))  # subset by cluster here in cluster loop
+      if(pred.var == "LOI_PERCENT") x_dat <- 100*x_dat
+      x_95_int <- quantile(x_dat[,1], c(.025, .975))
+      
+      # Plot all iso together - no ICE curves
+      # Pivot PDP in SD to long format
+      res_long <- pivot_longer(res, cols ="Pred_D199_SD":"Pred_D202_SD_Cluster20", names_to = "Isotope", values_to = "Mean_Prediction")
+      
+      ###### End repeat code from above
+      
+      
+      
+      
+      
+      skater_i <- cl.order[i]
+      
+      # Subset pdp data to cluster and predictor
+      x_dat_cl <- pdp_dat %>% filter(Maha20 %in% skater_i) %>% dplyr::select(one_of(pred.var))
+      if(pred.var == "LOI_PERCENT") x_dat_cl <- 100*x_dat_cl
+      
+      # Calculate 95% interval of observed predictor values
+      x_95_int_cl <- quantile(x_dat_cl[,1], c(.025, .975))
+      
+      color.index <- as.numeric(skater_i)
+      
+      
+      # All isos by cluster - SD units
+      iso_dat_cl <- res_long %>% filter(Isotope %in% c(paste0("Pred_D199_SD_Cluster", skater_i), paste0("Pred_D200_SD_Cluster", skater_i), paste0("Pred_D202_SD_Cluster", skater_i)))
+      
+      annotations <- data.frame(
+        xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.06,
+        ypos =   max(iso_dat_cl$Mean_Prediction),
+        annotateText = c(paste0("Cluster ", skater_i)))
+      
+      
+      dat_plot <- iso_dat_cl %>% 
+        mutate(Isotope=case_match(Isotope,
+                                  paste0("Pred_D199_SD_Cluster", skater_i) ~ "D199",
+                                  paste0("Pred_D200_SD_Cluster", skater_i) ~ "D200",
+                                  paste0("Pred_D202_SD_Cluster", skater_i) ~ "D202")) 
+     
+      
+      # j==1 & i==length(cl.order) # bottom left - needs y-title and x-title
+      # j==1 & i<length(cl.order) # first column without corner - needs y-title and no x-title
+      # j>1 & i==length(cl.order) # no y-title, needs x-title
+      # j>1 & i<length(cl.order) # no y-title, no x-title
+      
+  
+      
+      # j==1 & i==length(cl.order) # bottom left - needs y-title and x-title
+      if(j==1 & i==length(cl.order)){    
+      p_i <- dat_plot %>% 
+        ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
+        theme_classic() +
+        theme(text=element_text(size=32)) +
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
+        geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
+        scale_color_manual(values=c("black", "gray20", "gray40")) +
+        scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+        xlab(pred.var.lab) +
+        ylab(paste(c(paste0("CLUSTER ", skater_i), paste0("Isotope SD")), collapse = '\n')) +
+          # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD"))))
+        
+        coord_cartesian(xlim = range(res[pred.var]))+
+        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+        theme(legend.key.size = unit(4,"line"), 
+              # legend.position="bottom",
+              legend.position="none"
+              # axis.title.y = element_blank()
+              )  +
+        scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
+        } 
+      
+      # j==1 & i<length(cl.order) # first column without corner - needs y-title and no x-title
+      if(j==1 & i<length(cl.order)){    
+        p_i <- dat_plot %>% 
+          ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
+          theme_classic() +
+          theme(text=element_text(size=32)) +
+          annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
+          geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          xlab(pred.var.lab) +
+          ylab(paste(c(paste0("CLUSTER ", skater_i), paste0("Isotope SD")), collapse = '\n')) +
+          coord_cartesian(xlim = range(res[pred.var]))+
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+          theme(legend.key.size = unit(4,"line"), 
+                # legend.position="bottom",
+                legend.position="none",
+                axis.title.x = element_blank()
+          )  +
+          scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
+      }     
+      
+      
+      # j>1 & i==length(cl.order) # no y-title, needs x-title
+      if(j>1 & i==length(cl.order)){  
+        p_i <- dat_plot %>% 
+          ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
+          theme_classic() +
+          theme(text=element_text(size=32)) +
+          annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
+          geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          xlab(pred.var.lab) +
+          # ylab(paste0("Cluster ", skater_i, ": Mean prediction (z)")) +
+          coord_cartesian(xlim = range(res[pred.var]))+
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+          theme(legend.key.size = unit(4,"line"), 
+                # legend.position="bottom",
+                legend.position="none",
+                axis.title.y = element_blank()
+          )  +
+          scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
+      }
+          
+      # j>1 & i<length(cl.order) # no y-title, no x-title
+      if(j>1 & i<length(cl.order)){  
+        p_i <- dat_plot %>% 
+          ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
+          theme_classic() +
+          theme(text=element_text(size=32)) +
+          annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
+          geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          xlab(pred.var.lab) +
+          coord_cartesian(xlim = range(res[pred.var]))+
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
+          theme(legend.key.size = unit(4,"line"), 
+                # legend.position="bottom",
+                legend.position="none",
+                axis.title.y = element_blank(),
+                axis.title.x = element_blank()
+          )  +
+          scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
+      }
+        
+
+      p_i
+    
+    })
+    
+  }
+  
+}
+
+pred.order
+# Temp
+myplots[[1]]
+myplots[[2]] # 3
+myplots[[3]] # 8
+# Precip
+myplots[[17]]
+myplots[[18]]
+myplots[[19]]
+#Runoff
+myplots[[33]]
+myplots[[34]]
+myplots[[35]]
+
+
+# grid.plot <- ggarrange(plotlist=myplots,
+                       # nrow=16, ncol=10)
+
+# Either need to use cowplot to plot byrow, or redo the indices above
+grid.plot <- cowplot::plot_grid(plotlist=myplots, nrow=16, ncol=10, byrow=FALSE)
+                       
+
+# ggsave(plot=grid.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP.png"), width=60, height=48, limitsize=FALSE)
+
+ggsave(plot=grid.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP32.png"), width=60, height=48, limitsize=FALSE)
+
+# Need to add shared legend and change text size
+
+
+
+
+
+
+
 
 
 
