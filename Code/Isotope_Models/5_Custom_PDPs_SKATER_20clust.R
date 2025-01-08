@@ -5,6 +5,8 @@ library(foreach)
 library(doParallel)
 library(parallel)
 library(ggpubr)
+library(patchwork)
+
 
 output_dir <- "Model_Output/Iso/"
 model_dir <- "Saved_Models/Iso/"
@@ -635,6 +637,7 @@ Cl_kp <- names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)>9]) # 15 clusters w
 # "1"  "2"  "3"  "4"  "5"  "6"  "7"  "8"  "9"  "10" "11" "14" "15" "16" "19"
 
 names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)<10]) # "12" "13" "17" "18" "20"
+names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)<15]) # "12" "13" "17" "18" "20"
 
 pred.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s", "Hg0DryDep")
 
@@ -716,15 +719,17 @@ for(j in 1:length(pred.order)){
         xlab(pred.var.lab) +
         # ylab(paste0("All lakes: Isotope SD")) +
         # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
-        ylab(paste(c(paste0("ALL LAKES"), paste0("Isotope SD")), collapse = '\n')) +
+        ylab(paste(c(paste0("All lakes"), paste0("Predicted z")), collapse = '\n')) +
         
         coord_cartesian(xlim = range(res[pred.var]))+
-        geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
-        theme(legend.key.size = unit(4,"line"),
+        geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+        theme(legend.key.size = unit(5,"line"),
               axis.title.x = element_blank(),
-              # legend.position="bottom",
-              legend.position="none",
-              plot.title = element_text(hjust = 0.5))  +
+              legend.position="bottom",
+              # legend.position="none",
+              plot.title = element_text(hjust = 0.5),
+              legend.text = element_text(size=32),
+              legend.title = element_text(size=40))  +
         ggtitle(paste(pred.var.lab))+
         scale_y_continuous(breaks = round(range(all_plot$Mean_Prediction), 2))
       } else{  # no y-axis title
@@ -740,13 +745,15 @@ for(j in 1:length(pred.order)){
           # ylab(paste0("All lakes: Isotope SD")) +
           # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
-          theme(legend.key.size = unit(4,"line"),
+          geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          theme(legend.key.size = unit(5,"line"),
                 axis.title.x = element_blank(),
-                # legend.position="bottom",
-                legend.position="none",
+                legend.position="bottom",
+                # legend.position="none",
                 plot.title = element_text(hjust = 0.5),
-                axis.title.y = element_blank()
+                axis.title.y = element_blank(),
+                legend.text = element_text(size=32),
+                legend.title = element_text(size=40)
                 )  +
           ggtitle(paste(pred.var.lab))+
           scale_y_continuous(breaks = round(range(all_plot$Mean_Prediction), 2))
@@ -848,14 +855,16 @@ for(j in 1:length(pred.order)){
         scale_color_manual(values=c("black", "gray20", "gray40")) +
         scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
         xlab(pred.var.lab) +
-        ylab(paste(c(paste0("CLUSTER ", skater_i), paste0("Isotope SD")), collapse = '\n')) +
-          # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD"))))
+        ylab(paste(c(paste0("Cluster ", skater_i), paste0("Predicted z")), collapse = '\n')) +
+          # labs(y=expression(atop(bold("All lakes"),atop("Predicted z"))))
         
         coord_cartesian(xlim = range(res[pred.var]))+
-        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
-        theme(legend.key.size = unit(4,"line"), 
-              # legend.position="bottom",
-              legend.position="none"
+        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+        theme(legend.key.size = unit(5,"line"), 
+              legend.position="bottom",
+              legend.text = element_text(size=32),
+              legend.title = element_text(size=40)
+              # legend.position="none"
               # axis.title.y = element_blank()
               )  +
         scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
@@ -873,13 +882,15 @@ for(j in 1:length(pred.order)){
           scale_color_manual(values=c("black", "gray20", "gray40")) +
           scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
           xlab(pred.var.lab) +
-          ylab(paste(c(paste0("CLUSTER ", skater_i), paste0("Isotope SD")), collapse = '\n')) +
+          ylab(paste(c(paste0("Cluster ", skater_i), paste0("Predicted z")), collapse = '\n')) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
-          theme(legend.key.size = unit(4,"line"), 
-                # legend.position="bottom",
-                legend.position="none",
-                axis.title.x = element_blank()
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          theme(legend.key.size = unit(5,"line"), 
+                legend.position="bottom",
+                # legend.position="none",
+                axis.title.x = element_blank(),
+                legend.text = element_text(size=32),
+                legend.title = element_text(size=40)
           )  +
           scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
       }     
@@ -899,11 +910,13 @@ for(j in 1:length(pred.order)){
           xlab(pred.var.lab) +
           # ylab(paste0("Cluster ", skater_i, ": Mean prediction (z)")) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
-          theme(legend.key.size = unit(4,"line"), 
-                # legend.position="bottom",
-                legend.position="none",
-                axis.title.y = element_blank()
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          theme(legend.key.size = unit(5,"line"), 
+                legend.position="bottom",
+                # legend.position="none",
+                axis.title.y = element_blank(),
+                legend.text = element_text(size=32),
+                legend.title = element_text(size=40)
           )  +
           scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
       }
@@ -921,23 +934,21 @@ for(j in 1:length(pred.order)){
           scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
           xlab(pred.var.lab) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
-          theme(legend.key.size = unit(4,"line"), 
-                # legend.position="bottom",
-                legend.position="none",
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          theme(legend.key.size = unit(5,"line"), 
+                legend.position="bottom",
+                # legend.position="none",
                 axis.title.y = element_blank(),
-                axis.title.x = element_blank()
+                axis.title.x = element_blank(),
+                legend.text = element_text(size=32),
+                legend.title = element_text(size=40)
           )  +
           scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
       }
-        
 
       p_i
-    
     })
-    
   }
-  
 }
 
 pred.order
@@ -958,21 +969,27 @@ myplots[[35]]
 # grid.plot <- ggarrange(plotlist=myplots,
                        # nrow=16, ncol=10)
 
-# Either need to use cowplot to plot byrow, or redo the indices above
-grid.plot <- cowplot::plot_grid(plotlist=myplots, nrow=16, ncol=10, byrow=FALSE)
-                       
+# Alignment doesn't work well
+# grid.plot <- cowplot::plot_grid(plotlist=myplots, nrow=16, ncol=10, byrow=FALSE, align="hv")
+# ggsave(plot=grid.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_align.png"), width=60, height=48, limitsize=FALSE)
 
+# Not aligned plot sizes
+# grid.plot <- cowplot::plot_grid(plotlist=myplots, nrow=16, ncol=10, byrow=FALSE)
 # ggsave(plot=grid.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP.png"), width=60, height=48, limitsize=FALSE)
 
-ggsave(plot=grid.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP32.png"), width=60, height=48, limitsize=FALSE)
 
-# Need to add shared legend and change text size
+# wrap.plot <- wrap_plots(myplots, nrow=16, ncol=10, byrow=FALSE)
+# ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrap.png"), width=60, height=48, limitsize=FALSE)
 
+wrap.plot <- wrap_plots(myplots, nrow=16, ncol=10, byrow=FALSE) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "bottom")
+ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrapLegendBottom.png"), width=60, height=48, limitsize=FALSE)
 
-
-
-
-
+wrap.plot <- wrap_plots(myplots, nrow=16, ncol=10, byrow=FALSE) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "right")
+ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrapLegendRight.png"), width=60, height=46, limitsize=FALSE)
 
 
 
@@ -1084,12 +1101,12 @@ end.time <- Sys.time()
 print(end.time-start.time) # 2.6 min for one combo (x90 = 234 min = 3.9 hr serial)
 # Took 3.12 hours in parallel
 
-###########
+
 
 
 
   
-# Make bivariate figures using output from above code
+#### Make bivariate figures using output from above code - variable scale
   
 for(j in 1:length(preds)){
   print(j)
@@ -1099,14 +1116,11 @@ for(j in 1:length(preds)){
   pred.var.lab <- pred.var
   if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
   
-  
   dir.create(paste0(fig_dir, "PDP_SKATER20/D199/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
   dir.create(paste0(fig_dir, "PDP_SKATER20/D200/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
   dir.create(paste0(fig_dir, "PDP_SKATER20/D202/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
   dir.create(paste0(fig_dir, "PDP_SKATER20/All3/BIVARIATE_PLOTS/", pred.var.lab), recursive=T, showWarnings = FALSE) 
 
-  
-    
   other.vars <- preds[-j]
   
   for(w in 1:length(other.vars)){
@@ -1118,15 +1132,11 @@ for(j in 1:length(preds)){
     pred.var.lab2 <- pred.var.w
     if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
     
-    
   # Read in PDP dat
   res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
   
-  
   # Predicted isos in original units
   res_origunit <- res
-  
-  names(res_origunit)
   
   # Transform appropriate columns
   res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
@@ -1136,22 +1146,15 @@ for(j in 1:length(preds)){
   colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
   
   
-  
-  
   # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
   if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
   if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
   
   
-  
   # Observed values for 2 vars of interest
   obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
   if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
-  # x_95_int <- quantile(x_dat[,1], c(.025, .975))
-  
-  
-  names(res_origunit)
-  
+
   
   
   # D199 all lakes PDP - origUnit
@@ -1165,7 +1168,6 @@ for(j in 1:length(preds)){
     # ylim(range(res_origunit[pred.var.w])) +
     geom_tile(aes(fill=Pred_D199_origUnits)) +
     geom_contour(color = "white") +
-    # scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=mean(range(res_origunit$Pred_D199_origUnits)), alpha=1, rev=F) +
     scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F) +
     theme(text=element_text(size=20)) +
     xlab(paste0(pred.var.lab)) +
@@ -1219,9 +1221,11 @@ for(j in 1:length(preds)){
   }
 }
 
-# Make bivariate figures with fixed color scale
 
-# Get max and min predicted values over all pairs
+
+#### Make bivariate figures with fixed color scale ####
+
+#### Get max and min predicted values over all predictor pairs ####
 minD199 <- NA
 maxD199 <- NA
 minD200 <- NA
@@ -1239,8 +1243,6 @@ for(j in 1:length(preds)){
   pred.var.lab <- pred.var
   if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
   
-  
-  
   other.vars <- preds[-j]
   
   for(w in 1:length(other.vars)){
@@ -1252,15 +1254,12 @@ for(j in 1:length(preds)){
     pred.var.lab2 <- pred.var.w
     if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
     
-    
     # Read in PDP dat
     res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
     
     
     # Predicted isos in original units
     res_origunit <- res
-    
-    names(res_origunit)
     
     # Transform appropriate columns
     res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
@@ -1292,6 +1291,7 @@ mean200 <- mean(meanD200, na.rm = T)
 mean202 <- mean(meanD202, na.rm = T)
 
 
+# Loop for bivariate plots with fixed scale
 for(j in 1:length(preds)){
   print(j)
   
@@ -1323,11 +1323,8 @@ for(j in 1:length(preds)){
     # Read in PDP dat
     res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
     
-    
     # Predicted isos in original units
     res_origunit <- res
-    
-    names(res_origunit)
     
     # Transform appropriate columns
     res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
@@ -1335,7 +1332,6 @@ for(j in 1:length(preds)){
     res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
     
     colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
-    
     
     
     
@@ -1348,11 +1344,7 @@ for(j in 1:length(preds)){
     # Observed values for 2 vars of interest
     obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
     if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
-    # x_95_int <- quantile(x_dat[,1], c(.025, .975))
-    
-    
-    names(res_origunit)
-    
+
     
     
     # D199 all lakes PDP - origUnit
@@ -1366,7 +1358,6 @@ for(j in 1:length(preds)){
       # ylim(range(res_origunit[pred.var.w])) +
       geom_tile(aes(fill=Pred_D199_origUnits)) +
       geom_contour(color = "white") +
-      # scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=mean(range(res_origunit$Pred_D199_origUnits)), alpha=1, rev=F) +
       scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
       theme(text=element_text(size=20)) +
       xlab(paste0(pred.var.lab)) +
@@ -1421,60 +1412,489 @@ for(j in 1:length(preds)){
 col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv", "Hg0DryDep")
 
 
-# Make lists of plots to arrange, then make giant figure
+#### Multi-panel figure for bivariate PDPs - each isotope separate ####
+# Make sure run loop above to get ranges for each isotope
+# range199 <- c( min(minD199, na.rm = T), max(maxD199, na.rm=T))
+# range200 <- c( min(minD200, na.rm = T), max(maxD200, na.rm=T))
+# range202 <- c( min(minD202, na.rm = T), max(maxD202, na.rm=T))
+# mean200 <- mean(meanD200, na.rm = T)
+# mean202 <- mean(meanD202, na.rm = T)
+
+pred.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s", "Hg0DryDep")
+
+# D199 
+biplots199 <- vector('list', length(pred.order)*length(pred.order))
+
+for(j in 1:length(pred.order)){
+  print(j)
+  
+  for(w in 1:length(pred.order)){
+    
+    print(w)
+    
+    biplots199[[(j-1)*(length(pred.order)) + w]] <- local({
+   
+      j <- j
+      w <- w
+      pred.var <- pred.order[j] 
+      
+      pred.var.lab <- pred.var
+      if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+      
+      pred.var.w <- pred.order[w]
+      
+      pred.var.lab2 <- pred.var.w
+      if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
+      
+      
+      if(pred.var==pred.var.w){
+        # if(w==1) p199 <- ggplot() + theme_void() + ggtitle(paste(pred.var.lab))
+        # if(w>1 & w<length(pred.order)) p199 <- ggplot() + theme_void() 
+        # if(w==length(pred.order)) p199 <- ggplot() + theme_void() + xlab(paste(pred.var.lab))
+        p199 <- ggplot() + 
+          annotate("text", x = 4, y = 25, size=16, label = paste(pred.var.lab)) + 
+          theme_void()
+          
+      } else{
+        
+        # Read in PDP dat
+        res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
+        
+        # Predicted isos in original units
+        res_origunit <- res
+        
+        # Transform appropriate columns
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+        
+        colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+        
+        
+        
+        # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+        
+        # Observed values for 2 vars of interest
+        obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
+        if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
+        
+        
+        
+        # D199 all lakes PDP - origUnit
+        # Center D199 at 0 - others will be centered at the mean
+        # Also use coord_cartesian here because cuts off outer row otherwise
+        
+        if(j==1 & w<10){
+         # y-axis label
+          p199 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+
+        if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # both labels
+          p199 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm")) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # x-axis label
+          p199 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.y = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+
+        if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
+          # no axis labels
+          p199 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.y = element_blank(),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        # All axis labels
+        # p199 <- res_origunit %>%
+        #   ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+        #   theme_minimal() +
+        #   coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+        #   geom_tile(aes(fill=Pred_D199_origUnits)) +
+        #   geom_contour(color = "white") +
+        #   scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+        #   theme(text=element_text(size=40),
+        #         legend.text = element_text(size=40),
+        #         legend.title = element_text(size=48),
+        #         legend.key.size = unit(2, "cm")) +
+        #   xlab(paste0(pred.var.lab)) +
+        #   ylab(paste0(pred.var.lab2)) +
+        #   geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        
+        
+        p199
+        }
+    })
+  }
+}
+
+biplots199[[2]]
+
+wrap.plot199 <- wrap_plots(biplots199, nrow=10, ncol=10, byrow=FALSE) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "right")
+ggsave(plot=wrap.plot199, filename=paste0(fig_dir, "PDP_SKATER20/D199_All_Bivariate_PDP_wrapLegendRight_reduceLabs.png"), width=70, height=45, limitsize=FALSE)
+
+
+
+
+# D200
+biplots200 <- vector('list', length(pred.order)*length(pred.order))
+
+for(j in 1:length(pred.order)){
+  print(j)
+  
+  for(w in 1:length(pred.order)){
+    
+    print(w)
+    
+    biplots200[[(j-1)*(length(pred.order)) + w]] <- local({
+      
+      j <- j
+      w <- w
+      pred.var <- pred.order[j] 
+      
+      pred.var.lab <- pred.var
+      if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+      
+      pred.var.w <- pred.order[w]
+      
+      pred.var.lab2 <- pred.var.w
+      if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
+      
+      
+      if(pred.var==pred.var.w){
+        p200 <- ggplot() + 
+          annotate("text", x = 4, y = 25, size=16, label = paste(pred.var.lab)) + 
+          theme_void()
+        
+      } else{
+        
+        # Read in PDP dat
+        res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
+        
+        # Predicted isos in original units
+        res_origunit <- res
+        
+        # Transform appropriate columns
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+        
+        colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+        
+        
+        
+        # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+        
+        # Observed values for 2 vars of interest
+        obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
+        if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
+        
+        
+        
+        # D200 all lakes PDP - origUnit
+        # Center D200 at mean
+        # Also use coord_cartesian here because cuts off outer row otherwise
+        
+        if(j==1 & w<10){
+          # y-axis label
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # both labels
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm")) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # x-axis label
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.y = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
+          # no axis labels
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.y = element_blank(),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+          
+        p200
+      }
+    })
+  }
+}
+
+biplots200[[2]]
+
+wrap.plot200 <- wrap_plots(biplots200, nrow=10, ncol=10, byrow=FALSE) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "right")
+ggsave(plot=wrap.plot200, filename=paste0(fig_dir, "PDP_SKATER20/D200_All_Bivariate_PDP_wrapLegendRight_reduceLabs.png"), width=70, height=45, limitsize=FALSE)
 
 
 
 
 
+# D202
+biplots202 <- vector('list', length(pred.order)*length(pred.order))
 
+for(j in 1:length(pred.order)){
+  print(j)
+  
+  for(w in 1:length(pred.order)){
+    
+    print(w)
+    
+    biplots202[[(j-1)*(length(pred.order)) + w]] <- local({
+      
+      j <- j
+      w <- w
+      pred.var <- pred.order[j] 
+      
+      pred.var.lab <- pred.var
+      if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+      
+      pred.var.w <- pred.order[w]
+      
+      pred.var.lab2 <- pred.var.w
+      if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
+      
+      
+      if(pred.var==pred.var.w){
+        p202 <- ggplot() + 
+          annotate("text", x = 4, y = 25, size=16, label = paste(pred.var.lab)) + 
+          theme_void()
+        
+      } else{
+        
+        # Read in PDP dat
+        res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
+        
+        # Predicted isos in original units
+        res_origunit <- res
+        
+        # Transform appropriate columns
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+        
+        colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+        
+        
+        
+        # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+        
+        # Observed values for 2 vars of interest
+        obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
+        if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
+        
+        
+        
+        # D202 all lakes PDP - origUnit
+        # Center D202 at mean
+        # Also use coord_cartesian here because cuts off outer row otherwise
+        
+        if(j==1 & w<10){
+          # y-axis label
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # both labels
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm")) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # x-axis label
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.y = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
+          # no axis labels
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=40),
+                  legend.title = element_text(size=48),
+                  legend.key.size = unit(2, "cm"),
+                  axis.title.y = element_blank(),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+        }
+        
+        p202
+      }
+    })
+  }
+}
 
+biplots202[[2]]
 
-
-
-
-
-
-
-
-
-
-
-# Serial - faster, likely due to overhead of creating clusters?
-
-# Parallelizing likely only makes sense for bivariate PDPs
-
-
-# 
-# cl <- makeCluster(10) 
-# doParallel::registerDoParallel(cl)
-# start.time <- Sys.time()
-# Iso_Mean_Preds2 <- foreach(i = seq_len(nrow(pred.grid)), .combine = rbind) %dopar% {
-#     temp <- pdp_dat
-#   
-#   # replace variable of interest with single value of interest
-#   temp[, pred.var] <- pred.grid[i, pred.var] 
-#   rf_predict_All <- predict(rf.final, newdata=temp)
-#   
-#   # Predicted isos in SD
-#   iso_preds_temp <- data.frame(Pred_D199_SD = mean(rf_predict_All$regrOutput$D199$predicted), 
-#                                Pred_D200_SD = mean(rf_predict_All$regrOutput$D200$predicted),
-#                                Pred_D202_SD = mean(rf_predict_All$regrOutput$D202$predicted))
-#   
-#   # Iso_Mean_Preds <- rbind(Iso_Mean_Preds, iso_preds_temp)
-#   iso_preds_temp
-# }
-# 
-# 
-# end.time <- Sys.time()
-# end.time-start.time # 25.67474 secs
-# 
-# stopCluster(cl)
-
-# head(Iso_Mean_Preds2)
-# head(Iso_Mean_Preds)
-# 
-# 
-# # Same out to 14 decimal places
-# round(Iso_Mean_Preds2$Pred_D199_SD, 14) == round(Iso_Mean_Preds$Pred_D199_SD, 14)
-
+wrap.plot202 <- wrap_plots(biplots202, nrow=10, ncol=10, byrow=FALSE) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "right")
+ggsave(plot=wrap.plot202, filename=paste0(fig_dir, "PDP_SKATER20/D202_All_Bivariate_PDP_wrapLegendRight_reduceLabs.png"), width=70, height=45, limitsize=FALSE)
