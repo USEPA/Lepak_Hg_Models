@@ -573,6 +573,15 @@ Naive_Test_Errors_Avg$Naive_Bias <- rowMeans(cbind( Naive_Test_Errors_D199$Naive
 Relative_Test_Errors_Avg <- data.frame(RAE=Test_Errors_Avg$MAE/Naive_Test_Errors_Avg$Naive_MAE,
                                    RRSE=Test_Errors_Avg$RMSE/Naive_Test_Errors_Avg$Naive_RMSE)
 
+Relative_Test_Errors_Iso <- data.frame(RAE_D199=Test_Errors_D199$MAE/Naive_Test_Errors_D199$Naive_MAE,
+                                       RRSE_D199=Test_Errors_D199$RMSE/Naive_Test_Errors_D199$Naive_RMSE,
+                                       RAE_D200=Test_Errors_D200$MAE/Naive_Test_Errors_D200$Naive_MAE,
+                                       RRSE_DD200=Test_Errors_D200$RMSE/Naive_Test_Errors_D200$Naive_RMSE,
+                                       RAE_D202=Test_Errors_D202$MAE/Naive_Test_Errors_D202$Naive_MAE,
+                                       RRSE_D202=Test_Errors_D202$RMSE/Naive_Test_Errors_D202$Naive_RMSE)
+
+
+
 
 # Naive CV errors
 All_dat_Pred_Naive <- NULL
@@ -621,8 +630,31 @@ NaiveCV_Stats_Avg$Bias <- rowMeans(cbind( NaiveCV_Stats_D199$Bias, NaiveCV_Stats
 Naive_MeanCV_mae_Avg <- mean(NaiveCV_Stats_Avg$MAE)
 Naive_MeanCV_rmse_Avg <- mean(NaiveCV_Stats_Avg$RMSE)
 
+# Note that I'm computing average RMSE over folds (rather than average MSE over folds and then square root) for consistency in how CV RMSE was calculated, which was done that way to calculate the SE of mean RMSE directly
+# mean(NaiveCV_Stats_Avg$RMSE)
+# sqrt(mean((NaiveCV_Stats_Avg$RMSE^2)))
+
 Relative_CV_Errors_Avg <- data.frame(RAE=CV_Errors_Avg$MAE/Naive_MeanCV_mae_Avg,
                                  RRSE=CV_Errors_Avg$RMSE/Naive_MeanCV_rmse_Avg)
+
+
+Naive_MeanCV_mae_D199 <- mean(NaiveCV_Stats_D199$MAE)
+Naive_MeanCV_rmse_D199 <- mean(NaiveCV_Stats_D199$RMSE)
+
+Naive_MeanCV_mae_D200 <- mean(NaiveCV_Stats_D200$MAE)
+Naive_MeanCV_rmse_D200 <- mean(NaiveCV_Stats_D200$RMSE)
+
+Naive_MeanCV_mae_D202 <- mean(NaiveCV_Stats_D202$MAE)
+Naive_MeanCV_rmse_D202 <- mean(NaiveCV_Stats_D202$RMSE)
+
+Relative_CV_Errors_Iso <- data.frame(RAE_D199=CV_Errors_D199$MAE/Naive_MeanCV_mae_D199,
+                                       RRSE_D199=CV_Errors_D199$RMSE/Naive_MeanCV_rmse_D199,
+                                       RAE_D200=CV_Errors_D200$MAE/Naive_MeanCV_mae_D200,
+                                       RRSE_DD200=CV_Errors_D200$RMSE/Naive_MeanCV_rmse_D200,
+                                       RAE_D202=CV_Errors_D202$MAE/Naive_MeanCV_mae_D202,
+                                       RRSE_D202=CV_Errors_D202$RMSE/Naive_MeanCV_rmse_D202)
+
+
 
 
 Relative_Errors <- rbind(Relative_Test_Errors_Avg, Relative_CV_Errors_Avg)
@@ -630,6 +662,11 @@ Relative_Errors$Dataset <- c("Test_Set_34", "Train_CV_Select")
 Relative_Errors <- Relative_Errors %>% relocate(Dataset)
 write.csv(Relative_Errors, paste0(output_dir, "Avg_Relative_Error_Table.csv"), row.names = F)
 
+
+Relative_Errors_Iso <- rbind(Relative_Test_Errors_Iso, Relative_CV_Errors_Iso)
+Relative_Errors_Iso$Dataset <- c("Test_Set_34", "Train_CV_Select")
+Relative_Errors_Iso <- Relative_Errors_Iso %>% relocate(Dataset)
+write.csv(Relative_Errors_Iso, paste0(output_dir, "Iso_Relative_Error_Table.csv"), row.names = F)
 
 
 ####################
