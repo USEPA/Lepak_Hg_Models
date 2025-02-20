@@ -324,6 +324,26 @@ for(j in 1:length(preds)){
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) 
   ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL.png"), width=10, height=6)
   
+  # Resave certain predictors for thresholds
+  # res_origunit %>%
+  #   ggplot(aes(x =  get(pred.var) , y = Pred_D199_origUnits)) +
+  #   theme_minimal() +
+  #   theme(text=element_text(size=20))+
+  #   annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+  #   geom_line(linewidth=2) + 
+  #   xlab(pred.var.lab) +
+  #   ylab("Mean D199 prediction") +
+  #   coord_cartesian(xlim = range(res_origunit[pred.var]), 
+  #                   ylim = range(res_origunit$Pred_D199_origUnits))+
+  #   # scale_x_continuous(breaks = seq(0, 20, by = 1)) # Hg0DryDep limits
+  #   # scale_x_continuous(breaks = seq(0, 3000, by = 200)) +# Precip8110Cat limits
+  #   # scale_y_continuous(breaks = seq(-.04, .04, by = .01)) # Precip8110Cat limits
+  # 
+  #   scale_x_continuous(breaks = seq(0, 3000, by = 200)) # RunoffCat limits
+  # 
+  # ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL_fineAxis.png"), width=10, height=6)
+  
+  
   # D199 all lakes PDP WITH ICE - origUnit remove rectangle
   # Odd lakes
   res_origunit %>%
