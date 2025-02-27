@@ -7,6 +7,10 @@ library(missForest) # 1.5
 library(doParallel)
 library(tidyverse)
 
+# library(remotes)
+# install_version(
+#   "missForest",
+#   version = "1.5")
 
 
 Data <- read_csv("Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv")

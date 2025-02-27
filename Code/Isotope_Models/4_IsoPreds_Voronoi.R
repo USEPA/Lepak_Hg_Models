@@ -8,9 +8,9 @@ library(sf)
 library(sfheaders)
 library(tigris) # in NAD83, default year of 2022
 library(crsuggest)
-library(spdep)
+library(spdep) # 1.3-5
 library(sp) # used in blog example for coordinates() function
-library(terra)
+library(terra) # 1.7.78
 library(ggpubr)
 
 

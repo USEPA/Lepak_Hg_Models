@@ -6,7 +6,7 @@ library(foreach)
 library(doParallel)
 library(pdp) # 0.8.1
 library(colorspace)
-library(vegan)
+library(vegan) # 2.6-6.1
 library(maps)
 
 # library(remotes)

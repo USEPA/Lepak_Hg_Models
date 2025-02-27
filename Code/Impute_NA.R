@@ -8,25 +8,10 @@ library(doParallel)
 library(tidyverse)
 
 
-# o	Implement both random forest and elastic net analyses for THg and %MeHg
-#   	Identify optimal predictor subsets and relative importance
-#   	Assess predictive ability of reduced models
-#   	Quantify/visualize predictor-response relationships and interactions
-# o	Implement similar analysis for Hg isotopes
-#   	Identify optimal predictor subsets for multivariate isotope response
-#   	Understand influence/importance of predictors on each individual isotope
-
-
-# R: randomForest, cforest, randomForestSRC for MVRF
-# permimp 
-
-# R: glmnet
-
-# MV:	Identify which/how variable importance metrics will work with the multivariate approaches. Will likely want some aggregate measure of importance across all responses, as well as importance/influence of predictors on each individual response.
-# Correlated predictors - functions for permuting groups of correlated preds, or conditional var impt (permimp)
-
-
-
+# library(remotes)
+# install_version(
+#   "missForest",
+#   version = "1.5")
 
 Data <- read_csv("Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv")
 
