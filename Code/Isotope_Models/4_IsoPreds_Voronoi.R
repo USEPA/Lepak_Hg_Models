@@ -515,6 +515,12 @@ ggarrange(m20polys +
 ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust.png"),
        width=20, height=20)
 
+# Save just figure with state outline
+m20states+ 
+  # ggtitle("Skater-Mahalanobis-20clust") + 
+  theme(legend.position="none")
+ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust_StateOutlines.png"),
+       width=20, height=10)  
 
        
 
@@ -531,7 +537,21 @@ df_clust_write <- left_join(df, clusters_sub)
 write.csv(df_clust_write, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"), row.names = F)
 
 
+# Write clusters and as shapefile for other plotting
+output_dir_shapefile <- "Model_Output/Iso/Shapefiles"
+dir.create(output_dir_shapefile)
 
+# Write lake polygons with Maha20 ID
+clusters_shp <- clusters %>% dplyr::select(-Maha10, -Maha30, -Maha100)
+st_write(clusters_shp, paste0(output_dir_shapefile, "/Lake_VoronoiPolygons_with_Maha20ClusterID.shp"))
+
+point_clusetrs_shp <- point_clusters %>% dplyr::select(-Maha10, -Maha30, -Maha100)
+st_write(point_clusetrs_shp, paste0(output_dir_shapefile, "/Lake_Points_with_Maha20ClusterID.shp"))
+
+
+# Write 
+col.table.write <- data.frame(HexCode=cols, Maha20=1:20)
+write.csv(col.table.write, paste0(cluster_dir, "/Cluster_Hex_Codes.csv"), row.names = F)
 
 # ggarrange(e10polys + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
 #                                                      plot.title = element_text(hjust = 0.5, size=40),
