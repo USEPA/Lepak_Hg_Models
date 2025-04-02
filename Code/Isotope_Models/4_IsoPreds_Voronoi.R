@@ -392,7 +392,9 @@ costs_maha <- nbcosts(nb=nla_nb, data = nla_scaled, method = c("mahalanobis"), c
 nla_w_maha <- nb2listw(nla_nb, costs_maha, style="B") # style B is binary coding
 
 # 'mstree'  creates the minimal spanning tree that turns the adjacency graph into a subgraph with n nodes and n-1 edges
+set.seed(38)
 nla_mst_maha <- mstree(nla_w_maha)
+
 
 # Edges with higher dissimilarity are removed sequentially until left with a spanning tree that takes the minimum sum of dissimilarities across all edges of the tree, hence minimum spanning tree. 
 plot(st_geometry(vor_ter_sf), border=gray(.5), main="Mahalanobis spanning tree")
@@ -402,9 +404,11 @@ plot(nla_mst_maha, coordinates(as_Spatial(df_sf)),col="blue", cex.lab=0.6, cex.c
 # This is implemented via spdep::skater and the ncuts arg indicates the number of partitions to make, resulting in ncuts+1 groups.
 numclust <- 10
 clus10_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
+head(clus10_maha$groups)
 
 numclust <- 20
 clus20_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
+# sum(clus20_maha$groups != df_clust_write$Maha20)
 
 numclust <- 30
 clus30_maha <- skater(edges = nla_mst_maha[,1:2], data = nla_scaled, ncuts = numclust-1, method = c("mahalanobis"), cov=cov_pred)
@@ -582,7 +586,8 @@ dev.off()
 clusters_sub <- st_drop_geometry(clusters_orig) %>% dplyr::select(NLA12_ID, Maha10, Maha20, Maha30)
 df_clust_write <- left_join(df, clusters_sub)
 write.csv(df_clust_write, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"), row.names = F)
-
+# df_clust_write <- read.csv(paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"))
+# head(df_clust_write)
 
 # Write clusters and as shapefile for other plotting
 output_dir_shapefile <- "Model_Output/Iso/Shapefiles"
