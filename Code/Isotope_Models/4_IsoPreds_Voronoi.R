@@ -22,6 +22,15 @@ fig_dir <- "Figures/Iso/"
 dir.create(paste0(fig_dir, "Clusters"))
 cluster_dir <- paste0(fig_dir, "Clusters")
 
+# Read in and join Ryan's cluster numbers and colors
+New_ColorsNumbers <- read.csv("Data/Maha-reassign.csv") %>% 
+  dplyr::select(Maha20, New_Maha, Color_code) %>% 
+  mutate(Color_code = paste0("#", Color_code)) %>% 
+  mutate(Color_code = ifelse(Color_code=="#56608", "#056608", Color_code),
+         Maha20 = as.factor(Maha20),
+         New_Maha = as.factor(New_Maha))
+
+head(New_ColorsNumbers)
 
 # Read in predictions from Predict_ISO_MVRF_subset.R
 df <- read.csv(paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24.csv"))
@@ -454,11 +463,12 @@ dev.off()
 
 
 
-# 20 colors for plotting
-cols2 <- sequential_hcl(5, palette = "Light Grays")
-cols3 <- qualitative_hcl(17, palette = "Dark 3")
-set.seed(13) # 5
-cols <- sample(c(cols3, cols2[-c(4,5)]))
+# OLD COLORS - 20 colors for plotting
+# cols2 <- sequential_hcl(5, palette = "Light Grays")
+# cols3 <- qualitative_hcl(17, palette = "Dark 3")
+# set.seed(13) # 5
+# cols <- sample(c(cols3, cols2[-c(4,5)]))
+
 
 
 # Plot voronoi with points and polys colored by cluster
@@ -477,9 +487,39 @@ cols <- sample(c(cols3, cols2[-c(4,5)]))
 #   geom_sf(data=states_tig, col="white", fill=NA) +
 #   scale_fill_manual(values = cols)
 
+
+# Join new cluster numbers and colors to polys and points
+
+clusters_orig <- clusters
+point_clusters_orig <- point_clusters
+
+clusters <- left_join(clusters, New_ColorsNumbers) %>% 
+  dplyr::select(-c("Maha10", "Maha20", "Maha30", "Maha100")) %>% 
+  rename(Maha20=New_Maha)
+
+point_clusters <- left_join(point_clusters, New_ColorsNumbers) %>% 
+  dplyr::select(-c("Maha10", "Maha20", "Maha30", "Maha100")) %>% 
+  rename(Maha20=New_Maha)
+
 # Centroid for labeling
 centroid <- point_clusters %>% group_by(Maha20) %>% summarise(centroid=st_union(geometry)) %>% st_centroid() 
 
+head(clusters)
+
+New_ColorsNumbers
+
+scale_color_KV <- function(...){
+  ggplot2:::manual_scale(
+    'color', 
+    values = setNames(New_ColorsNumbers$Color_code, New_ColorsNumbers$New_Maha)
+  )
+}
+scale_fill_KV <- function(...){
+  ggplot2:::manual_scale(
+    'fill', 
+    values = setNames(New_ColorsNumbers$Color_code, New_ColorsNumbers$New_Maha)
+  )
+}
 
 # 20
 m20polys <- ggplot() +
@@ -487,7 +527,8 @@ m20polys <- ggplot() +
   theme_void() +
   theme(legend.position="bottom") +
   geom_sf(data=df_sf, col="white", size=1)+
-  scale_fill_manual(values = cols) +
+  # scale_fill_manual(values = cols) +
+  scale_fill_KV() +
   geom_sf_text(data = centroid, aes(label = Maha20), size=12, alpha=0.85, colour="black", show.legend = F)
 
 m20states <- ggplot() + 
@@ -496,7 +537,8 @@ m20states <- ggplot() +
   theme(legend.position="bottom") +
   geom_sf(data=df_sf, col="white", size=1) +
   geom_sf(data=states_tig, col="white", fill=NA)+
-  scale_fill_manual(values = cols)+
+  # scale_fill_manual(values = cols)+
+  scale_fill_KV() +
   geom_sf_text(data = centroid, aes(label = Maha20), size=12, alpha=0.85, colour="black", show.legend = F)
 
 # Plot Mahalanobis 20 cluster with lake and state polys
@@ -512,17 +554,20 @@ ggarrange(m20polys +
                   plot.margin = unit(c(0,0,0,0), 'lines')),
           ncol=1, 
           nrow=2)
-ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust.png"),
+ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust_NEWCOLORS.png"),
        width=20, height=20)
 
 # Save just figure with state outline
 m20states+ 
   # ggtitle("Skater-Mahalanobis-20clust") + 
   theme(legend.position="none")
-ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust_StateOutlines.png"),
+ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust_StateOutlines_NEWCOLORS.png"),
        width=20, height=10)  
 
        
+
+##### NOT RERUN BELOW AFTER CHANGING COLORS/NUMBERS, BUT SHOULD WORK #####
+
 
 # Multiple plots
 plot_vars <- c(preds, "Pred_D199_origUnits", "Pred_D200_origUnits", "Pred_D202_origUnits") #,  "Pred_D200_origUnits", "Pred_D202_origUnits") "Maha20", "Omernik_II",  
@@ -531,8 +576,10 @@ png(paste0(cluster_dir, "/Predictors_and_Iso.png"),
 plot(clusters[plot_vars], max.plot=15)
 dev.off()
 
-# Write clusters to original file
-clusters_sub <- st_drop_geometry(clusters) %>% dplyr::select(NLA12_ID, Maha10, Maha20, Maha30)
+
+
+# Write clusters to original file - keeping original numbers
+clusters_sub <- st_drop_geometry(clusters_orig) %>% dplyr::select(NLA12_ID, Maha10, Maha20, Maha30)
 df_clust_write <- left_join(df, clusters_sub)
 write.csv(df_clust_write, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"), row.names = F)
 
@@ -541,17 +588,21 @@ write.csv(df_clust_write, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINA
 output_dir_shapefile <- "Model_Output/Iso/Shapefiles"
 dir.create(output_dir_shapefile)
 
-# Write lake polygons with Maha20 ID
-clusters_shp <- clusters %>% dplyr::select(-Maha10, -Maha30, -Maha100)
+# Write lake polygons with Maha20 ID - NEW CLUSTERS
+clusters_shp <- clusters # %>% dplyr::select(-Maha10, -Maha30, -Maha100)
 st_write(clusters_shp, paste0(output_dir_shapefile, "/Lake_VoronoiPolygons_with_Maha20ClusterID.shp"))
 
-point_clusetrs_shp <- point_clusters %>% dplyr::select(-Maha10, -Maha30, -Maha100)
+point_clusetrs_shp <- point_clusters # %>% dplyr::select(-Maha10, -Maha30, -Maha100)
 st_write(point_clusetrs_shp, paste0(output_dir_shapefile, "/Lake_Points_with_Maha20ClusterID.shp"))
 
 
-# Write 
-col.table.write <- data.frame(HexCode=cols, Maha20=1:20)
-write.csv(col.table.write, paste0(cluster_dir, "/Cluster_Hex_Codes.csv"), row.names = F)
+# Write - old color codes
+# col.table.write <- data.frame(HexCode=cols, Maha20=1:20)
+# write.csv(col.table.write, paste0(cluster_dir, "/Cluster_Hex_Codes.csv"), row.names = F)
+
+
+
+
 
 # ggarrange(e10polys + ggtitle("Skater-Euclidean-10clust") + theme(legend.position="none", 
 #                                                      plot.title = element_text(hjust = 0.5, size=40),

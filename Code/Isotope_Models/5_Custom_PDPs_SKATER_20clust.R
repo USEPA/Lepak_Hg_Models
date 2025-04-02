@@ -27,6 +27,16 @@ Preds_with_Clusters <- read.csv(paste0(output_dir, "Isotope_Predictions_All_Lake
 Preds_with_Clusters <- Preds_with_Clusters %>% rename(WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s=WetLossConv)
 # This has LakeRole in it as well and can be joined
 
+# Read in and join Ryan's cluster numbers and colors
+New_ColorsNumbers <- read.csv("Data/Maha-reassign.csv") %>% 
+  dplyr::select(Maha20, New_Maha, Color_code) %>% 
+  mutate(Color_code = paste0("#", Color_code)) %>% 
+  mutate(Color_code = ifelse(Color_code=="#56608", "#056608", Color_code))
+
+
+Preds_with_Clusters <- left_join(Preds_with_Clusters, New_ColorsNumbers) %>% 
+  dplyr::select(-c("Maha10", "Maha20", "Maha30")) %>% 
+  rename(Maha20=New_Maha)
 
 ## *** Note that LOI was unnecessarily divided by 100 an extra time in isotope models (in 3_Predict_ISO_MVRF_subset.R), which is how it appears in Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv, and is how it should be input into models AND FOR GENERATING THE PDPs ****
 ## But for visualizations it should be multiplied by 100 so that it is a proportion for better interpretation
@@ -220,6 +230,8 @@ for(j in 1:length(preds)){
 
 #### Make figures using output from previous loop ####
 
+## *** EDIT THIS TO USE RYAN'S COLORS ##
+
 # Cluster colors - matches 4_IsoPreds_Voronoi.R colors and map
 cols2 <- sequential_hcl(5, palette = "Light Grays")
 cols3 <- qualitative_hcl(17, palette = "Dark 3")
@@ -233,6 +245,16 @@ scale_color_KV <- function(...){
     values = setNames(cols, as.character(1:20))
   )
 }
+
+# New color function using Ryan's colors
+scale_color_KV <- function(...){
+  ggplot2:::manual_scale(
+    'color', 
+    values = setNames(New_ColorsNumbers$Color_code, New_ColorsNumbers$New_Maha)
+  )
+}
+values = setNames(New_ColorsNumbers$Color_code, New_ColorsNumbers$New_Maha)
+
 
 pdp_dat$Cluster <- factor(pdp_dat$Maha20)
 
