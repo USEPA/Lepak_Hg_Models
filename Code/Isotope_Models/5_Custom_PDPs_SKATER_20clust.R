@@ -28,7 +28,7 @@ Preds_with_Clusters <- Preds_with_Clusters %>% rename(WetLossConv_Loss_of_solubl
 # This has LakeRole in it as well and can be joined
 
 # Read in and join Ryan's cluster numbers and colors
-New_ColorsNumbers <- read.csv("Data/Maha-reassign.csv") %>% 
+New_ColorsNumbers <- read.csv("Tables/Maha-reassign.csv") %>% 
   dplyr::select(Maha20, New_Maha, Color_code) %>% 
   mutate(Color_code = paste0("#", Color_code)) %>% 
   mutate(Color_code = ifelse(Color_code=="#56608", "#056608", Color_code))
