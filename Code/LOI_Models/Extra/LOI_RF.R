@@ -1,7 +1,7 @@
-# THg/LOI model
+# LOI model without THg
 
-library(party) # 1.3-11 on VM
-library(permimp) # permimp_1.0-2 
+# library(party) # 1.3-11 on VM
+# library(permimp) # permimp_1.0-2 
 library(randomForest) # randomForest_4.7-1.1
 # library(tuneRanger) # tuneRanger_0.5       
 library(tidyverse) # tidyverse_1.3.2
@@ -13,9 +13,9 @@ library(tidyverse) # tidyverse_1.3.2
 
 
 
-output_dir <- "Model_Output/THgLOI/"
-model_dir <- "Saved_Models/THgLOI/"
-fig_dir <- "Figures/THgLOI/"
+output_dir <- "Model_Output/Extra/LOI/"
+model_dir <- "Saved_Models/Extra/LOI/"
+fig_dir <- "Figures/Extra/LOI/"
 
 dir.create(paste0(output_dir))
 dir.create(paste0(model_dir))
@@ -34,15 +34,26 @@ hist(log10(Train_Dat$STHG_ng_g))
 
 sum(c(Train_Dat$STHG_ng_g, Test_Dat$STHG_ng_g)==0)
 names(Train_Dat)
-range(Train_Dat$LOI_PERCENT)
 
-# Make LOI a percent (doesn't matter for this model, but need for THg/LOI model
+# Make LOI a percent doesn't matter for this model
 Train_Dat$LOI_PERCENT <- Train_Dat$LOI_PERCENT/100
 Test_Dat$LOI_PERCENT <- Test_Dat$LOI_PERCENT/100
 
+range(Train_Dat$LOI_PERCENT)
+hist((Train_Dat$LOI_PERCENT))
+
+# Do log-transform for consistency with log10(THg/LOI) model
+Train_Dat$log10LOI <- log10(Train_Dat$LOI_PERCENT)
+Test_Dat$log10LOI <- log10(Test_Dat$LOI_PERCENT)
+
+hist((Train_Dat$log10LOI))
+
+# logit transform better for elastic net if go this route
+# hist(log10(Train_Dat$LOI_PERCENT/(1-Train_Dat$LOI_PERCENT)))
+
 # log-transform THg for all modeling
-Train_Dat$log10THgLOI <- log10(Train_Dat$STHG_ng_g/Train_Dat$LOI_PERCENT)
-Test_Dat$log10THgLOI <- log10(Test_Dat$STHG_ng_g/Test_Dat$LOI_PERCENT)
+# Train_Dat$log10THgLOI <- log10(Train_Dat$STHG_ng_g/Train_Dat$LOI_PERCENT)
+# Test_Dat$log10THgLOI <- log10(Test_Dat$STHG_ng_g/Test_Dat$LOI_PERCENT)
 
 
 
@@ -62,17 +73,19 @@ p <- ncol(Train_Dat_run)-1 # 124 preds
 # floor(3*p/4) # 93
 # floor(.9*p) # 112
 
-mtrys <- c(floor(.1*p), floor(.2*p), floor(p/3), floor(.5*p), floor(2*p/3), floor(3*p/4), floor(.9*p))
+mtrys <- c(floor(.05*p), floor(.1*p), floor(.15*p), floor(.2*p), floor(p/3), floor(.5*p), floor(2*p/3), floor(3*p/4), floor(.9*p))
 nodesizes <- c(1,5)
 
-grid_search <- data.frame(mtry=rep(mtrys,2), nodesize=rep(nodesizes, times=c(7,7)))
+length(mtrys)
+
+grid_search <- data.frame(mtry=rep(mtrys,2), nodesize=rep(nodesizes, times=c(length(mtrys),length(mtrys))))
 grid_search$OOB_error <- NA
 grid_search$rsq <- NA
 
 set.seed(3)
 for(i in 1:nrow(grid_search)){
-  
-  rf.i  <- randomForest(log10THgLOI ~ ., data=Train_Dat_run, 
+  print(i)
+  rf.i  <- randomForest(log10LOI ~ ., data=Train_Dat_run, 
                         mtry=grid_search$mtry[i], 
                         ntree=5000,
                         nodesize=grid_search$nodesize[i],
@@ -85,92 +98,17 @@ for(i in 1:nrow(grid_search)){
   rm(rf.i)
 }
 
-# write.csv(grid_search, "Tables/Grid_Search/THgLOI_grid_srch.csv", row.names = F)
-grid_search <- read.csv("Tables/Grid_Search/THgLOI_grid_srch.csv")
+write.csv(grid_search, "Tables/Grid_Search/LOI_grid_srch.csv", row.names = F)
+grid_search <- read.csv("Tables/Grid_Search/LOI_grid_srch.csv")
 
 ggplot(grid_search, aes(x=mtry, y=OOB_error, col=nodesize))+geom_point()
 # nodesize=1 generally better but essentially same at mtry=p/3
 
+grid_search %>% arrange(OOB_error)
+floor(.15*p)
+# Let's go with nodesize=1, mtry=.15*p ....again!! Same as THg/LOI
+# For THg + LOI, mtry=.5*p, probably to capture LOI!
 
-mtrys2 <- c(floor(.05*p))
-nodesizes <- c(1,5)
-
-grid_search2 <- data.frame(mtry=rep(mtrys2,2), nodesize=rep(nodesizes, times=c(1,1)))
-grid_search2$OOB_error <- NA
-grid_search2$rsq <- NA
-
-set.seed(3)
-for(i in 1:nrow(grid_search2)){
-  
-  rf.i  <- randomForest(log10THgLOI ~ ., data=Train_Dat_run, 
-                        mtry=grid_search2$mtry[i], 
-                        ntree=5000,
-                        nodesize=grid_search2$nodesize[i],
-                        keep.forest=F,
-                        keep.inbag = F,
-                        importance=F,
-                        replace=T)
-  grid_search2$OOB_error[i] <- rf.i$mse[5000] # final OOB mse
-  grid_search2$rsq[i] <- rf.i$rsq[5000] 
-  rm(rf.i)
-}
-
-# write.csv(grid_search2, "Tables/Grid_Search/THgLOI_grid_srch2.csv", row.names = F)
-grid_search2 <- read.csv("Tables/Grid_Search/THgLOI_grid_srch2.csv")
-
-grid_search <- rbind(grid_search, grid_search2)
-ggplot(grid_search, aes(x=mtry, y=OOB_error, col=nodesize))+geom_point()
-
-
-mtrys3 <- c(floor(.15*p))
-nodesizes <- c(1,5)
-
-grid_search3 <- data.frame(mtry=rep(mtrys3,2), nodesize=rep(nodesizes, times=c(1,1)))
-grid_search3$OOB_error <- NA
-grid_search3$rsq <- NA
-
-set.seed(13)
-for(i in 1:nrow(grid_search3)){
-  
-  rf.i  <- randomForest(log10THgLOI ~ ., data=Train_Dat_run, 
-                        mtry=grid_search3$mtry[i], 
-                        ntree=5000,
-                        nodesize=grid_search3$nodesize[i],
-                        keep.forest=F,
-                        keep.inbag = F,
-                        importance=F,
-                        replace=T)
-  grid_search3$OOB_error[i] <- rf.i$mse[5000] # final OOB mse
-  grid_search3$rsq[i] <- rf.i$rsq[5000] 
-  rm(rf.i)
-}
-
-# write.csv(grid_search3, "Tables/Grid_Search/THgLOI_grid_srch3.csv", row.names = F)
-grid_search3 <- read.csv("Tables/Grid_Search/THgLOI_grid_srch3.csv")
-
-grid_search <- rbind(grid_search, grid_search3)
-ggplot(grid_search, aes(x=mtry, y=OOB_error, col=nodesize))+geom_point()
-
-
-# Let's go with nodesize=1, mtry=.15*p
-# Not going with nodesize=1, mtry=.1*p because kind of a weird jumpy outlier
-# And like that nodesize doesn't matter at mtry=0.15
-# Note with LOI, mtry=.5*p, probably to capture LOI!
-
-# Old:
-# Best is 1/3 predictors and essentially equivalent at nodesize=1 and nodesize=5
-# Pick nodesize=5 and see if fixes var importance issue
-
-
-
-
-# Try tuneRF
-# set.seed(36)
-# rf.tun <- tuneRF(Train_Dat_run[,-128], Train_Dat_run[,128], stepFactor=1.1, ntreeTry=5000, nodesize=1, improve=0.05)
-# saveRDS(rf.tun, "Saved_Models/THg/THg_rf_tune_ntree5000_node1_sd36_improve05.rds")
-
-# plot(rf.tun[,1], rf.tun[,2])
-# Best is mtry=42 Increasing to 46 decreased OOB error by 0.03%
 
 
 
@@ -178,7 +116,7 @@ ggplot(grid_search, aes(x=mtry, y=OOB_error, col=nodesize))+geom_point()
 
 # First try classic random forest algorithm because all predictors are continuous (or almost all, some ordered categorical converted to numerical, one binary)
 set.seed(36)
-rf.all  <- randomForest(log10THgLOI ~ ., data=Train_Dat_run, 
+rf.all  <- randomForest(log10LOI ~ ., data=Train_Dat_run, 
                         mtry=max(floor(.15*p), 1), 
                         ntree=5000,
                         nodesize=1,
@@ -191,10 +129,10 @@ saveRDS(rf.all, paste0(model_dir, "rf_full_mtry15_ntree5000_node1_sd36.rds"))
 
 
 rf.all
-# MSE: 0.07363133
-# % Var explained: 28.97 
+# MSE: 0.05510351
+# % Var explained: 51.62 
 
-# mean((rf.all$predicted - Train_Dat_run$log10THg)^2) # OOB error
+# mean((rf.all$predicted - Train_Dat_run$log10LOI)^2) # OOB error
 # rf.all$
 # rf.all$mse[5000] # final OOB mse
 
@@ -210,7 +148,8 @@ row.names(rf_imp) <- NULL
 rf_imp <- rf_imp %>% arrange(desc(Importance))
 rf_imp$Variable <- factor(rf_imp$Variable, levels=rev(rf_imp$Variable))
 
-head(rf_imp, 10)
+head(rf_imp, 20)
+
 
 ggplot(rf_imp, aes(x=Variable, y=Importance)) +
   geom_bar(stat="identity" ) +
@@ -218,47 +157,37 @@ ggplot(rf_imp, aes(x=Variable, y=Importance)) +
   coord_flip() +
   scale_x_discrete(label=abbreviate)
 
-# Importance at nodesize=1 is nearly identical to nodesize=5
-# rf_imp1 <- data.frame(Variable=names(rf.all1$importance[,1]), Importance=rf.all1$importance[,1])
-# row.names(rf_imp1) <- NULL
-# rf_imp1 <- rf_imp1 %>% arrange(desc(Importance))
-# rf_imp1$Variable <- factor(rf_imp1$Variable, levels=rev(rf_imp1$Variable))
+rf_imp$Variable[1:20]
+# [1] LAKE_ORIGIN12                                                                           
+# [2] ClayCat                                                                                 
+# [3] pct_WetLossConv                                                                         
+# [4] Tmean8110Cat                                                                            
+# [5] Tmax8110Cat                                                                             
+# [6] OmCat                                                                                   
+# [7] SandCat                                                                                 
+# [8] Precip8110Cat                                                                           
+# [9] SumForestCat                                                                            
+# [10] BFICat                                                                                  
+# [11] WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s
+# [12] Ave_CONDUCTIVITY_uS_cm                                                                  
+# [13] Na2OCat                                                                                 
+# [14] Ave_pH                                                                                  
+# [15] Lake_Area_HA                                                                            
+# [16] WtDepCat                                                                                
+# [17] Ionic_Hg2Conc_ng_m3                                                                     
+# [18] Gas_Hg_Hg0Conc_ng_m3                                                                    
+# [19] WetLossLS_Loss_of_soluble_species_in_large_scale_precipitation_kg_s                     
+# [20] RunoffCat                     
 
+ggplot(Train_Dat, aes(x=log10LOI, fill=as.factor(LAKE_ORIGIN12))) + geom_density()
+# LAKE_ORIGIN12: 0=natural, 1=manmade
+# natural lakes have higher LOI
+Train_Dat %>% group_by(LAKE_ORIGIN12) %>% summarize(mean=mean(log10LOI), median=median(log10LOI))
 
+ggplot(Train_Dat, aes(x=log10(STHG_ng_g), fill=as.factor(LAKE_ORIGIN12))) + geom_density()
+Train_Dat %>% group_by(LAKE_ORIGIN12) %>% summarize(mean=mean(log10(STHG_ng_g)), median=median(log10(STHG_ng_g)))
 
-# Conditional permutation importance - still not working
-# Conditional variable importance (can try values between 0.8-1)
-# set.seed(3)
-# start.time <- Sys.time()
-# rf.cpi9999 <- permimp(rf.all, conditional=TRUE, threshold=0.9999, thresholdDiagnostics = TRUE)
-# end.time <- Sys.time()
-# end.time-start.time # 5.7
-# # saveRDS(rf.cpi9999, paste0(output_dir, "CPI9999_rf_full_mtryHalf_ntree5000_node1_sd36.rds"))
-# rf.cpi9999 <- readRDS(paste0(output_dir, "CPI9999_rf_full_mtryHalf_ntree5000_node1_sd36.rds")) #
-# 
-
-
-# as.matrix(sort(rf.cpi9999$values, decreasing=T)) # CF, conditional
-# plot(rf.cpi9999, type="bar", las=1)
-# 
-# rf_impC <- tibble(Variable=names(rf.cpi9999$values), Importance=rf.cpi9999$values) %>% arrange(desc(Importance))
-# rf_impC$Variable <- factor(rf_impC$Variable, levels=rev(rf_impC$Variable))
-# 
-# head(rf_impC, 10)
-
-# This must have happened because correlated with many predictors and couldn't permute within grid
-
-# Warning: ‘permimp’ Unable to permute conditionally for 78 variable(s) in 50 percent of the cases.
-# Increasing the threshold may help. 
-# The variables for which conditionally permuting (often) was impossible are: (showing only six) 
-# - Gas_Hg_Hg0Conc_ng_m3
-# - Ionic_Hg2Conc_ng_m3
-# - Particle_Hg_HgPConc_ng_m3
-# - Hg0DryDep
-# - Hg2DryDep
-# - HgPDryDep
-
-
+# BFICat = Baseflow is the component of streamflow that can be attributed to ground-water discharge into streams. The Baseflow Index (BFI) is the ratio of baseflow to total flow, expressed as a percentage, within catchment.
 
 
 
@@ -295,7 +224,7 @@ for(i in 1:p){
   nump <- ncol(All_dat_preds_loop)-1 # Number predictors
   
   set.seed(13) 
-  rf  <- randomForest(log10THgLOI ~ ., data=All_dat_preds_loop, 
+  rf  <- randomForest(log10LOI ~ ., data=All_dat_preds_loop, 
                       mtry=max(floor(.15*nump), 1), 
                       ntree=5000,
                       nodesize=1,
@@ -307,14 +236,14 @@ for(i in 1:p){
   rf.pred.tr <- predict(rf, newdata=Train_Dat_run) # training
   
   # OOB error
-  OOB.rmse[i] <- sqrt(mean((Train_Dat_run$log10THg-rf.pred)^2)) # OOB rmse
-  OOB.mae[i] <- mean(abs(Train_Dat_run$log10THg-rf.pred)) # oob mae
-  OOB.bias[i] <- mean(rf.pred-Train_Dat_run$log10THg) # oob bias
+  OOB.rmse[i] <- sqrt(mean((Train_Dat_run$log10LOI-rf.pred)^2)) # OOB rmse
+  OOB.mae[i] <- mean(abs(Train_Dat_run$log10LOI-rf.pred)) # oob mae
+  OOB.bias[i] <- mean(rf.pred-Train_Dat_run$log10LOI) # oob bias
   
   # Training error
-  train.rmse[i] <- sqrt(mean((Train_Dat_run$log10THg-rf.pred.tr)^2)) # training rmse
-  train.mae[i] <- mean(abs(Train_Dat_run$log10THg-rf.pred.tr)) #  training mae
-  train.bias[i] <- mean(rf.pred.tr-Train_Dat_run$log10THg) # training bias
+  train.rmse[i] <- sqrt(mean((Train_Dat_run$log10LOI-rf.pred.tr)^2)) # training rmse
+  train.mae[i] <- mean(abs(Train_Dat_run$log10LOI-rf.pred.tr)) #  training mae
+  train.bias[i] <- mean(rf.pred.tr-Train_Dat_run$log10LOI) # training bias
   
   # Conditional permutation importance
   # set.seed(3) 
@@ -349,6 +278,9 @@ write.csv(RFE_info, paste0(output_dir, "rf_RFE_info.csv"), row.names = FALSE)
 
 end.time <- Sys.time()
 end.time-start.time
+# 5.93 hr
+
+
 
 
 RFE_info <- read.csv(paste0(output_dir, "rf_RFE_info.csv"))
@@ -374,11 +306,11 @@ ggplot(RFE_info, aes(x=1:length(OOB_mae), y=OOB_bias)) + geom_line() + geom_poin
 
 
 
-which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) # 79
-which(RFE_info$OOB_mae==min(RFE_info$OOB_mae)) # 68
+which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) # 14
+which(RFE_info$OOB_mae==min(RFE_info$OOB_mae)) # 10
 
-min(RFE_info$OOB_rmse) # 0.2679942
-min(RFE_info$OOB_mae) # 0.1733658
+min(RFE_info$OOB_rmse) # 0.2344426
+min(RFE_info$OOB_mae) # 0.1598123
 
 
 RFE_info[which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) : nrow(RFE_info),]
@@ -401,14 +333,14 @@ RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_mae, labe
   annotate(geom = "text", x=rev(1:50), y=.40, label=RFE_info$Worst_Var[RFE_info$NumVars %in% 1:50], angle=90, hjust=1, size=4) +
   ylab("OOB MAE") + xlab("Number variables")
 ggsave(paste0(fig_dir, "/RFE_OOB_MAE.png"), width=10, height=6)
-
+  
 
 RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_rmse, label=Worst_Var)) + 
   geom_point(size=3) + 
   geom_line(size=1.2) +
   # geom_hline(yintercept=.699, lty=2, col="green3", size=1.2) +
   # geom_hline(yintercept=1, lty=2, col="yellow3", size=1.2) +
-  coord_cartesian(ylim=c(.25,.5)) +
+  coord_cartesian(ylim=c(.2,.5)) +
   geom_hline(yintercept=min(RFE_info$OOB_rmse)) +
   theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
@@ -420,14 +352,13 @@ ggsave(paste0(fig_dir, "/RFE_OOB_RMSE.png"), width=10, height=6)
 
 #
 RFE_info_write <- RFE_info %>% arrange(NumVars)
-write.csv(RFE_info_write, paste0(output_dir, "THgLOI_rf_RFE_info.csv"), row.names = FALSE)
+write.csv(RFE_info_write, paste0(output_dir, "LOI_rf_RFE_info.csv"), row.names = FALSE)
 
 
 
 # Do CV at each iteration to get SE
 
 # Do stratified partitioning by space though to get 
-# Rerun with THg/LOI% ??????????
 
 
 

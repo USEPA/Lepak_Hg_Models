@@ -44,9 +44,6 @@
 -	Still have non-signif differences in distributions with them removed
 -	Uses AllLakes_AllVariables_final_Date.csv and LakesInLakeCatAndNARS_AllVariables_final_Date.csv output from Format_Data_And_Final_Bias_Check.R
 
-#### First_analysis.R
--	Uses AllLakes_AllVariables_final_Date.csv to plot MeHg, THg, LOI, Dry_Weight, and % MeHG against e/o
-
 #### Generate_Variable_Table.R
 -	Generates initial tables for making decisions about predictor variables – since been heavily modified in Excel so doesn’t correspond to this script, but keeping for posterity
 -	Uses AllLakes_AllVariables_final_2021-05-19.csv (all lakes, all variables) and LakesInLakeCatAndNARS_AllVariables_final_2021-05-19.csv (lakes that are in both LakeCat and NARS) from Format_Data_And_Final_Bias_Check.R  with these file versions:

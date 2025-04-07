@@ -17,9 +17,9 @@ library(maps)
 # install_version("pdp", version = "0.8.1")
 
 
-output_dir <- "Model_Output/MeHgTHg_wLOI/"
-model_dir <- "Saved_Models/MeHgTHg_wLOI/"
-fig_dir <- "Figures/MeHgTHg_wLOI/"
+output_dir <- "Model_Output/Extra/MeHgTHg_wLOI/"
+model_dir <- "Saved_Models/Extra/MeHgTHg_wLOI/"
+fig_dir <- "Figures/Extra/MeHgTHg_wLOI/"
 
 dir.create(paste0(output_dir, "CV"), showWarnings = F)
 dir.create(paste0(output_dir, "PDP"), showWarnings = F)

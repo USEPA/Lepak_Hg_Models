@@ -555,7 +555,14 @@ plot(Residual~LAT_DD83, data=CV_Resids)
 dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
 dist_res <- as.matrix(dist(CV_Resids$Residual))
 mantel_test <- mantel(dists, dist_res, permutations=1000)
-mantel_test$signif # r=0.1, p=.001 There is slight spatial autocorrelation in residuals
+mantel_test$signif # r=0.1015, p=.0010 There is slight spatial autocorrelation in residuals
+
+# dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
+# dist_res <- as.matrix(dist(CV_Resids$Residual))
+# mantel_test <- mantel(dists, dist_res, permutations=1000, method="spearman")
+# mantel_test$signif # r=0.08658 , p=0.000999 There is slight spatial autocorrelation in residuals
+
+
 
 # Try with Haversine spatial distance - same result
 library(geosphere)

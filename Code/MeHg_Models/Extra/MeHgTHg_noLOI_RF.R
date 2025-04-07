@@ -1,4 +1,4 @@
-# THg model without LOI
+# MeHg/THg model without LOI
 
 # library(party) # 1.3-11 on VM
 # library(permimp) # permimp_1.0-2 
@@ -11,11 +11,12 @@ library(tidyverse) # tidyverse_1.3.2
 #   "party",
 #   version = "1.3-9")
 
-output_dir <- "Model_Output/THg_noLOI/"
-model_dir <- "Saved_Models/THg_noLOI/"
-fig_dir <- "Figures/THg_noLOI/"
+output_dir <- "Model_Output/Extra/MeHgTHg_noLOI/"
+model_dir <- "Saved_Models/Extra/MeHgTHg_noLOI/"
+fig_dir <- "Figures/Extra/MeHgTHg_noLOI/"
 
 dir.create(paste0(output_dir))
+dir.create(paste0(output_dir,"/Temp_Files/"))
 dir.create(paste0(model_dir))
 dir.create(paste0(fig_dir))
 
@@ -27,30 +28,42 @@ Test_Dat <- read.csv("Formatted_Data/THg_MHg_Imputed_Test_Data.csv")
 Imputed_Preds <- read.csv("Tables/List_Imputed_Training_Preds_THg_MHg.csv")
 
 
-hist(Train_Dat$STHG_ng_g)
-hist(log10(Train_Dat$STHG_ng_g))
+hist(Train_Dat$SMHG_ng_g)
+hist(log10(Train_Dat$SMHG_ng_g))
 
-sum(c(Train_Dat$STHG_ng_g, Test_Dat$STHG_ng_g)==0)
+sum(c(Train_Dat$SMHG_ng_g, Test_Dat$SMHG_ng_g)==0)
 names(Train_Dat)
 
 # log-transform THg for all modeling
-Train_Dat$log10THg <- log10(Train_Dat$STHG_ng_g)
-Test_Dat$log10THg <- log10(Test_Dat$STHG_ng_g)
+# Train_Dat$log10THg <- log10(Train_Dat$STHG_ng_g)
+# Test_Dat$log10THg <- log10(Test_Dat$STHG_ng_g)
 
 # Make LOI a percent doesn't matter for this model
 Train_Dat$LOI_PERCENT <- Train_Dat$LOI_PERCENT/100
 Test_Dat$LOI_PERCENT <- Test_Dat$LOI_PERCENT/100
 
+# Compute MeHg/THg ratio for modeling
+Train_Dat$log10MeHgTratio <- log10(Train_Dat$SMHG_ng_g/Train_Dat$STHG_ng_g)
+Test_Dat$log10MeHgTratio <- log10(Test_Dat$SMHG_ng_g/Test_Dat$STHG_ng_g)
+
+# Toss lakes where MeHg > THg
+Train_Dat %>% filter(STHG_ng_g <SMHG_ng_g) %>% dplyr::select(STHG_ng_g, SMHG_ng_g,  NLA12_ID) # NLA12_WY-R02
+Test_Dat %>% filter(STHG_ng_g <SMHG_ng_g) %>% dplyr::select(STHG_ng_g, SMHG_ng_g,  NLA12_ID) # No test lakes have this issue
+
+Train_Dat <- Train_Dat %>% filter(!(STHG_ng_g <SMHG_ng_g)) # Now 974
+
 
 # Remove LOI
-Train_Dat_run <- Train_Dat %>% dplyr::select(-NLA12_ID, -SMHG_ng_g, -STHG_ng_g, -LOI_PERCENT) 
+Train_Dat_run <- Train_Dat %>% dplyr::select(-NLA12_ID, -SMHG_ng_g, -STHG_ng_g, -LOI_PERCENT) # , -log10THg
 p <- ncol(Train_Dat_run)-1 # 124 preds 
+
+hist(Train_Dat$log10MeHgTratio)
+hist(10^(Train_Dat$log10MeHgTratio), xlim=c(0,.2), breaks=100)
 
 
 # Try tuning mtry and nodesize first at 5000 trees
-# Not doing nodesize=5 for MeHg b/c used nodesize=1 for all THg
-mtrys <- c(floor(.1*p), floor(.15*p), floor(.2*p), floor(p/3), floor(.5*p), floor(2*p/3), floor(3*p/4)) # floor(.05*p),  , floor(.9*p)
-nodesizes <- c(1) 
+mtrys <- c(floor(.1*p), floor(.15*p), floor(.2*p), floor(p/3), floor(.5*p), floor(2*p/3), floor(3*p/4)) 
+nodesizes <- c(1, 5)
 
 length(mtrys)
 
@@ -58,10 +71,10 @@ grid_search <- data.frame(mtry=rep(mtrys,2), nodesize=rep(nodesizes, times=c(len
 grid_search$OOB_error <- NA
 grid_search$rsq <- NA
 
-set.seed(3)
+set.seed(7)
 for(i in 1:nrow(grid_search)){
   print(i)
-  rf.i  <- randomForest(log10THg ~ ., data=Train_Dat_run, 
+  rf.i  <- randomForest(log10MeHgTratio ~ ., data=Train_Dat_run, 
                         mtry=grid_search$mtry[i], 
                         ntree=5000,
                         nodesize=grid_search$nodesize[i],
@@ -74,16 +87,14 @@ for(i in 1:nrow(grid_search)){
   rm(rf.i)
 }
 
-write.csv(grid_search, "Tables/Grid_Search/THg_noLOI_grid_srch.csv", row.names = F)
-grid_search <- read.csv("Tables/Grid_Search/THg_noLOI_grid_srch.csv")
+write.csv(grid_search, "Tables/Grid_Search/MeHgTHg_noLOI_grid_srch.csv", row.names = F)
+# grid_search <- read.csv("Tables/Grid_Search/MeHgTHg_noLOI_grid_srch.csv")
 
 ggplot(grid_search, aes(x=mtry, y=OOB_error, col=nodesize))+geom_point()
-# nodesize=1 generally better but essentially same at mtry=p/3
 
 grid_search %>% arrange(OOB_error)
-floor(p/3)
-# Let's go with nodesize=1, mtry=p/3  
-# Moving forward, just tune mtry and keep nodesize=1
+floor(.2*p)
+# Let's go with nodesize=1, mtry=.2*p  
 
 
 
@@ -92,23 +103,19 @@ floor(p/3)
 
 # First try classic random forest algorithm because all predictors are continuous (or almost all, some ordered categorical converted to numerical, one binary)
 set.seed(36)
-rf.all  <- randomForest(log10THg ~ ., data=Train_Dat_run, 
-                        mtry=max(floor(p/3), 1), 
+rf.all  <- randomForest(log10MeHgTratio ~ ., data=Train_Dat_run, 
+                        mtry=max(floor(.20*p), 1), 
                         ntree=5000,
                         nodesize=1,
                         keep.forest=T,
                         keep.inbag = T,
                         importance=T)
-saveRDS(rf.all, paste0(model_dir, "rf_full_mtry33_ntree5000_node1_sd36.rds"))
-# rf.all <- readRDS(paste0(model_dir, "rf_full_mtry33_ntree5000_node1_sd36.rds"))
-
-# rf.old <- readRDS("Saved_Models/THg/Old_without_LOI/rf_full_mtryThird_ntree5000_node1_sd36.rds")
-# Predictor order slightly changed. Predictors were re-imputed, redundant variables removed.
-
+saveRDS(rf.all, paste0(model_dir, "rf_full_mtry20_ntree5000_node1_sd36.rds"))
+# rf.all <- readRDS(paste0(model_dir, "rf_full_mtry20_ntree5000_node1_sd36.rds"))
 
 rf.all
-# MSE: 0.07899114
-# % Var explained: 46.25 
+# MSE: 0.1130783
+# % Var explained: 12.12 
 
 # mean((rf.all$predicted - Train_Dat_run$log10LOI)^2) # OOB error
 # rf.all$
@@ -160,18 +167,32 @@ train.rmse <- rep(NA,p)
 train.mae <- rep(NA,p)
 train.bias <- rep(NA,p)
 
+########## Run if needed 
+VI.list <- readRDS(paste0(output_dir, "/Temp_Files/VI_list.rds"))
+var.list <- readRDS(paste0(output_dir, "/Temp_Files/var_list.rds"))
+OOB.rmse <- readRDS(paste0(output_dir, "/Temp_Files/OOB_rmse.rds"))
+OOB.mae <- readRDS(paste0(output_dir, "/Temp_Files/OOB_mae.rds"))
+OOB.bias <- readRDS(paste0(output_dir, "/Temp_Files/OOB_bias.rds"))
+train.rmse <- readRDS(paste0(output_dir, "/Temp_Files/train_rmse.rds"))
+train.mae <- readRDS(paste0(output_dir, "/Temp_Files/train_mae.rds"))
+train.bias <- readRDS(paste0(output_dir, "/Temp_Files/train_bias.rds"))
 
+All_dat_preds_loop <- All_dat_preds_loop[,!colnames(All_dat_preds_loop) %in% var.list] # remove variables
+#####################
 
+## ***** Note: Need to change response in model fit and error calculations below, plus mtry ******
 start.time <- Sys.time()
 
-for(i in 1:p){
+start_i <- sum(!is.na(OOB.rmse)) + 1
+# start_i <- 1
+for(i in start_i:p){
   print(i)
   
   nump <- ncol(All_dat_preds_loop)-1 # Number predictors
   
   set.seed(13) 
-  rf  <- randomForest(log10THg ~ ., data=All_dat_preds_loop, 
-                      mtry=max(floor(p/3), 1), 
+  rf  <- randomForest(log10MeHgTratio ~ ., data=All_dat_preds_loop, 
+                      mtry=max(floor(.2*p), 1), 
                       ntree=5000,
                       nodesize=1,
                       #keep.forest=T,
@@ -182,27 +203,41 @@ for(i in 1:p){
   rf.pred.tr <- predict(rf, newdata=Train_Dat_run) # training
   
   # OOB error
-  OOB.rmse[i] <- sqrt(mean((Train_Dat_run$log10THg-rf.pred)^2)) # OOB rmse
-  OOB.mae[i] <- mean(abs(Train_Dat_run$log10THg-rf.pred)) # oob mae
-  OOB.bias[i] <- mean(rf.pred-Train_Dat_run$log10THg) # oob bias
+  OOB.rmse[i] <- sqrt(mean((Train_Dat_run$log10MeHgTratio-rf.pred)^2)) # OOB rmse
+  OOB.mae[i] <- mean(abs(Train_Dat_run$log10MeHgTratio-rf.pred)) # oob mae
+  OOB.bias[i] <- mean(rf.pred-Train_Dat_run$log10MeHgTratio) # oob bias
   
   # Training error
-  train.rmse[i] <- sqrt(mean((Train_Dat_run$log10THg-rf.pred.tr)^2)) # training rmse
-  train.mae[i] <- mean(abs(Train_Dat_run$log10THg-rf.pred.tr)) #  training mae
-  train.bias[i] <- mean(rf.pred.tr-Train_Dat_run$log10THg) # training bias
+  train.rmse[i] <- sqrt(mean((Train_Dat_run$log10MeHgTratio-rf.pred.tr)^2)) # training rmse
+  train.mae[i] <- mean(abs(Train_Dat_run$log10MeHgTratio-rf.pred.tr)) #  training mae
+  train.bias[i] <- mean(rf.pred.tr-Train_Dat_run$log10MeHgTratio) # training bias
   
   
   rf_imp <- data.frame(Variable=row.names(rf$importance), Importance=rf$importance[,1])
   row.names(rf_imp) <- NULL
   rf_imp <- rf_imp %>% arrange(Importance)
-
-
+  
+  
   VI.list[[i]] <- rf_imp
   var.list[i] <- rf_imp$Variable[1] # Least informative variable to remove
   
   All_dat_preds_loop <- All_dat_preds_loop[,!colnames(All_dat_preds_loop)==var.list[i]] # remove variable
   
   rm(rf)
+  
+  # Save results periodically in case it fails
+  if(i %% 10 ==0){ 
+    saveRDS(VI.list, paste0(output_dir, "/Temp_Files/VI_list.rds")) 
+    saveRDS(var.list, paste0(output_dir, "/Temp_Files/var_list.rds")) 
+    saveRDS(OOB.rmse, paste0(output_dir, "/Temp_Files/OOB_rmse.rds")) 
+    saveRDS(OOB.mae, paste0(output_dir, "/Temp_Files/OOB_mae.rds")) 
+    saveRDS(OOB.bias, paste0(output_dir, "/Temp_Files/OOB_bias.rds")) 
+    saveRDS(train.rmse, paste0(output_dir, "/Temp_Files/train_rmse.rds")) 
+    saveRDS(train.mae, paste0(output_dir, "/Temp_Files/train_mae.rds")) 
+    saveRDS(train.bias, paste0(output_dir, "/Temp_Files/train_bias.rds")) 
+    
+  }
+  
 }
 
 # Save output 
@@ -215,7 +250,7 @@ write.csv(RFE_info, paste0(output_dir, "rf_RFE_info.csv"), row.names = FALSE)
 
 end.time <- Sys.time()
 end.time-start.time
-# 6.175404   hr
+# 9.661366    hr
 
 
 
@@ -240,11 +275,11 @@ ggplot(RFE_info)+
 
 
 
-which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) # 14
-which(RFE_info$OOB_mae==min(RFE_info$OOB_mae)) # 43
+which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) # 95
+which(RFE_info$OOB_mae==min(RFE_info$OOB_mae)) # 93
 
-min(RFE_info$OOB_rmse) # 0.2800367
-min(RFE_info$OOB_mae) # 0.1815582
+min(RFE_info$OOB_rmse) # 0.3276442
+min(RFE_info$OOB_mae) # 0.2518371
 
 
 RFE_info[which(RFE_info$OOB_rmse==min(RFE_info$OOB_rmse)) : nrow(RFE_info),]
@@ -259,7 +294,7 @@ RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_mae, labe
   geom_line(size=1.2) +
   # geom_hline(yintercept=.699, lty=2, col="green3", size=1.2) +
   # geom_hline(yintercept=1, lty=2, col="yellow3", size=1.2) +
-  coord_cartesian(ylim=c(.18,.4)) +
+  coord_cartesian(ylim=c(.25,.4)) +
   geom_hline(yintercept=min(RFE_info$OOB_mae)) +
   theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
@@ -274,7 +309,7 @@ RFE_info %>% filter(NumVars %in% 1:50) %>% ggplot(aes(x=NumVars, y=OOB_rmse, lab
   geom_line(size=1.2) +
   # geom_hline(yintercept=.699, lty=2, col="green3", size=1.2) +
   # geom_hline(yintercept=1, lty=2, col="yellow3", size=1.2) +
-  coord_cartesian(ylim=c(.28,.5)) +
+  coord_cartesian(ylim=c(.32,.5)) +
   geom_hline(yintercept=min(RFE_info$OOB_rmse)) +
   theme_minimal(base_size = 19) +
   scale_x_continuous(breaks=seq(2,50,2)) +
@@ -286,7 +321,7 @@ ggsave(paste0(fig_dir, "/RFE_OOB_RMSE.png"), width=10, height=6)
 
 #
 RFE_info_write <- RFE_info %>% arrange(NumVars)
-write.csv(RFE_info_write, paste0(output_dir, "THg_noLOI_rf_RFE_info.csv"), row.names = FALSE)
+write.csv(RFE_info_write, paste0(output_dir, "MeHgTHg_noLOI_rf_RFE_info.csv"), row.names = FALSE)
 
 
 

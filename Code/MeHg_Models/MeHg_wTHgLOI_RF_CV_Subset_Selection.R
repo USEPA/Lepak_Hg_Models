@@ -565,7 +565,7 @@ CV_Resids <- Top_MAE_Mod %>% dplyr::select(Residual, LON_DD83, LAT_DD83)
 dists <- as.matrix(dist(cbind(CV_Resids$LAT_DD83, CV_Resids$LON_DD83)))
 dist_res <- as.matrix(dist(CV_Resids$Residual))
 mantel_test <- mantel(dists, dist_res, permutations=1000)
-mantel_test$signif # r=0.01, p=.22 There is NOT spatial autocorrelation in residuals
+mantel_test$signif # r=0.0092, p=.22 There is NOT spatial autocorrelation in residuals
 
 
 
