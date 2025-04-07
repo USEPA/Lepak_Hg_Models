@@ -56,7 +56,7 @@ vignettes/*.pdf
 
 *.zip
 *.tsv
-*.csv
+#*.csv
 *.rds
 *.json
 *.html
