@@ -30,7 +30,7 @@
     -	Renames/shortens NARS variable names
     -	Rename SITE_ID to NLA12_ID to match LakeCat
     -	Remove empty rows – get 1124
--	Uses "Weird_Data/Mismatch_Data_between_NARS_LakeCat_RYAN_CORRECTED.csv" to resolve discrepancies between NARS and LakeCat (see 5-13-21 email)
+-	Uses "Data/Weird_Data/Mismatch_Data_between_NARS_LakeCat_RYAN_CORRECTED.csv" to resolve discrepancies between NARS and LakeCat (see 5-13-21 email)
 -	Replaces missing USGS IDs in NARS with LakeCat ID from Weird_Data/Mismatch_ID_between_NARS_LakeCat.csv
 -	Replace LOI or dry weight values >100% with NA
 -	Does final bias check on 10 vars with corrected values
