@@ -40,10 +40,7 @@ vignettes/*.pdf
 .Renviron
 
 # Folders
-/Tables/**
 /Model_Output/**
-/Data/**
-/Formatted_Data/**
 /Docs/**
 /Figures/**
 /Papers/**
@@ -51,9 +48,11 @@ vignettes/*.pdf
 /Slides/**
 /Weird_Data/**
 
-# Extra working files
-/Code/Isotope_Models/Extra/**
-/Code/THg_Models/Extra/**
+# Adding these folders in so repo is reproducible
+#/Tables/**
+#/Data/**
+#/Formatted_Data/**
+
 
 *.zip
 *.tsv

@@ -55,7 +55,7 @@
 -	Creates codes for combining predictors, removing predictors, and designating as THg predictor for first analyses
 -	Writes Tables/Variable_summary_AllLakes_AllVariables.csv (summary including all lakes), Variable_summary_LakesInBoth_AllVariables.csv (summary including only lakes in both NARS and LakeCat), and Variable_summary_LakesInBoth_wResp_AllVariables.csv (lakes in both NARS and LakeCat plus actually have LOI, THg, and MeHg)
 -	Using Variable_summary_LakesInBoth_AllVariables.csv (lakes in both datasets)
-    -	Has been edited manually and dated.
+    -	Has been edited manually and dated - final version is Variable_summary_LakesInBoth_AllVariables_113022.xlsx
     -	Excel files now have columns that don’t correspond to original output table
 -	Not rerunning this with updated data, even though variable characteristics may shift. Just using this file now for the indicator variables.
 
