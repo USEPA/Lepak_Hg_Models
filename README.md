@@ -10,7 +10,7 @@
 ### Preliminary scripts used to select isotope lakes
 
 #### Select_Isotope_Lakes/1_Check_bias.R 
-– Uses: Data/NARS_Hg_isotopes_031321.xlsx and Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
+- Uses: Data/NARS_Hg_isotopes_031321.xlsx and Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
 -	Select 10 variables to check for similar distributions between lakes with isotopes and the rest
 -	Uses lakes in both LakeCat and NARS
 -	NARS variables: LOI_PERCENT, logArea, ELEVATION, logChla, logChloride, logMinOXYGEN, Particle_Hg_HgPConc_ng_m3, WetLossLS_kg_s, Omernik_II 
@@ -19,8 +19,7 @@
 
 #### Select_Isotope_Lakes/2_Sample_lakes.R 
 - Uses: Data/NARS_Hg_isotopes_031321.xlsx  and Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
--	Uses lakes in both LakeCat and NARS
--	Randomly sample lakes by Omernik II until p>.05 (uses alpha=.05 for this single test)
+-	Randomly samples lakes in both LakeCat and NARS until 10 variable distributions are similar
 -	Lake criteria for selection: STHG_ng_g > 30, not missing USGS_ID, not missing Gas_Hg_Hg0Conc_ng_m3, Ionic_Hg2Conc_ng_m3, Particle_Hg_HgPConc_ng_m3
 -	List of lakes to add in Data/Lakes_To_Add.csv – written 3-16-21
 
@@ -28,18 +27,15 @@
 -	Adds new isotope data – 36 lakes
     -	Data/032521 NLA Seds.xlsx
 -	Uses LakeCat_NLA_Hg_isotopes_020421.xlsx
--	Uses NARS file with 1127 lakes
+-	Uses NARS file
     -	Data/NARS_Hg_isotopes_060622.xlsx
-    -	Renames/shortens NARS variable names
-    -	Rename SITE_ID to NLA12_ID to match LakeCat
-    -	Remove empty rows – get 1124
+-	Formats data and does final bias check on 10 vars with corrected NARS values
+    -	Does not filter to lakes with data in both LakeCat and NARS, checks variable distributions of all isotope lakes against distributions of all other lakes (regardless of predictor availability)
 -	Uses "Data/Weird_Data/Mismatch_Data_between_NARS_LakeCat_RYAN_CORRECTED.csv" to resolve discrepancies between NARS and LakeCat
 -	Replaces missing USGS IDs in NARS with LakeCat ID from Weird_Data/Mismatch_ID_between_NARS_LakeCat.csv
--	Replace LOI or dry weight values >100% with NA
--	Does final bias check on 10 vars with corrected values
-    -	Note this does not filter to lakes with data in both LakeCat and NARS, checks variable distributions of all isotope lakes (regardless of predictor availability) against distributions of all other lakes (regardless of predictor availability)
+-	Renames/shortens NARS variable names
 -	Writes NARS_final_[Date].csv, LakeCat_final_[Date].csv, AllLakes_AllVariables_final_[Date].csv, LakesInLakeCatAndNARS_All_Variables_final_[Date].csv
-    -	I.e., data files of all lakes in NARS and LakeCat separately, plus merged datasets with full join of all lakes vs. full join of only lakes in both datasets, as requested
+    -	I.e., data files of all lakes in NARS and LakeCat separately, plus merged datasets with full join of all lakes or only lakes in both datasets, as requested
 
 #### Select_Isotope_Lakes/4_Format_Data_And_Final_Bias_Check2_rmIsoLksNotInBoth.R
 -	Confirms lakes with isotopes still have same distribution in 10 vars as rest of data when 3 lakes that aren’t in both NARS and LakeCat are removed
@@ -66,11 +62,11 @@
 
 #### Model_Prep/2_Select_predictors.R
 -	Uses coding system in “Variable_summary_LakesInBoth_AllVariables_113022.xlsx” to average multi-year predictors, sum certain land use predictors, use correlation to select between catchment vs. watershed variables, and generate final predictor list and data with new variables
-    -	Final predictor set: Tables/Final_THg_preds_Date.csv
-    -	Data with new variables: Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_Date.csv
+-	Writes final predictor set: Tables/Final_THg_preds_Date.csv
+-	Writes data with new variables: Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_[Date\.csv
 
 #### Model_Prep/3_Impute_NA.R
--	Reads in "Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv" created from Select_Predictors.R
+-	Uses "Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv" created from Select_Predictors.R
 -	Recodes 3 ordinal cat variables as numeric and recodes LAKE_ORIGIN12 as binary
 -	Creates 90-10 train/test split, stratified sampling by Omernik II
     -	Test set includes only lakes with THg
@@ -84,7 +80,7 @@
 
 #### Model_Prep/4_Impute_NA_Iso.R
 - Similar to above but for isotope lakes
--	Reads in "Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv" created from Select_Predictors.R
+-	Uses "Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv" created from Select_Predictors.R
     - Creates 90-10 train/test split, stratified sampling by Omernik II
     - Test set includes only lakes with isotope data
 - Imputes missing values for predictor variables using missForest
