@@ -13,9 +13,6 @@
 - Uses: Data/NARS_Hg_isotopes_031321.xlsx and Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
 -	Select 10 variables to check for similar distributions between lakes with isotopes and the rest
 -	Uses lakes in both LakeCat and NARS
--	NARS variables: LOI_PERCENT, logArea, ELEVATION, logChla, logChloride, logMinOXYGEN, Particle_Hg_HgPConc_ng_m3, WetLossLS_kg_s, Omernik_II 
--	LakeCat variables: Fe2O3Ws
--	Only Omernik II distribution differed
 
 #### Select_Isotope_Lakes/2_Sample_lakes.R 
 - Uses: Data/NARS_Hg_isotopes_031321.xlsx  and Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
@@ -26,27 +23,23 @@
 #### Select_Isotope_Lakes/3_Format_Data_And_Final_Bias_Check.R
 -	Adds new isotope data – 36 lakes
     -	Data/032521 NLA Seds.xlsx
--	Uses LakeCat_NLA_Hg_isotopes_020421.xlsx
--	Uses NARS file
-    -	Data/NARS_Hg_isotopes_060622.xlsx
+-	Uses Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
+-	Uses Data/NARS_Hg_isotopes_060622.xlsx
 -	Formats data and does final bias check on 10 vars with corrected NARS values
-    -	Does not filter to lakes with data in both LakeCat and NARS, checks variable distributions of all isotope lakes against distributions of all other lakes (regardless of predictor availability)
+    -	Does not filter to lakes with data in both LakeCat and NARS, checks variable distributions of all isotope lakes against distributions of all other lakes regardless of predictor availability
 -	Uses "Data/Weird_Data/Mismatch_Data_between_NARS_LakeCat_RYAN_CORRECTED.csv" to resolve discrepancies between NARS and LakeCat
 -	Replaces missing USGS IDs in NARS with LakeCat ID from Weird_Data/Mismatch_ID_between_NARS_LakeCat.csv
 -	Renames/shortens NARS variable names
--	Writes NARS_final_[Date].csv, LakeCat_final_[Date].csv, AllLakes_AllVariables_final_[Date].csv, LakesInLakeCatAndNARS_All_Variables_final_[Date].csv
+-	Writes in /Formatted_Data/: NARS_final_[Date].csv, LakeCat_final_[Date].csv, AllLakes_AllVariables_final_[Date].csv, LakesInLakeCatAndNARS_All_Variables_final_[Date].csv
     -	I.e., data files of all lakes in NARS and LakeCat separately, plus merged datasets with full join of all lakes or only lakes in both datasets, as requested
 
-#### Select_Isotope_Lakes/4_Format_Data_And_Final_Bias_Check2_rmIsoLksNotInBoth.R
--	Confirms lakes with isotopes still have same distribution in 10 vars as rest of data when 3 lakes that aren’t in both NARS and LakeCat are removed
--	Uses AllLakes_AllVariables_final_Date.csv and LakesInLakeCatAndNARS_AllVariables_final_Date.csv output from Format_Data_And_Final_Bias_Check.R
 
 
 ### Scripts used to select/aggregate predictor data, create train/test splits, and impute missing values
 
 #### Model_Prep/1_Generate_Variable_Table.R
 -	Generates initial tables to help make decisions about predictor variables 
--	Uses AllLakes_AllVariables_final_2021-05-19.csv (all lakes, all variables) and LakesInLakeCatAndNARS_AllVariables_final_2021-05-19.csv (lakes that are in both LakeCat and NARS) from Format_Data_And_Final_Bias_Check.R with these file versions:
+-	Uses Formatted_Data/AllLakes_AllVariables_final_2021-05-19.csv (all lakes, all variables) and Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_2021-05-19.csv (lakes that are in both LakeCat and NARS) created from Format_Data_And_Final_Bias_Check.R with these file versions:
     -	Data/032521 NLA Seds.xlsx
     -	Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
     -	Data/NARS_Hg_isotopes_031321.xlsx
