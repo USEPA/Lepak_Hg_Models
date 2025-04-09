@@ -585,7 +585,6 @@ ggsave(paste0(cluster_dir, "/SKATER_Mahalanobis_20clust_StateOutlines_NEWCOLORS.
 
        
 
-##### NOT RERUN BELOW AFTER CHANGING COLORS/NUMBERS, BUT SHOULD WORK #####
 
 
 # Multiple plots
@@ -601,24 +600,28 @@ dev.off()
 clusters_sub <- st_drop_geometry(clusters_orig) %>% dplyr::select(NLA12_ID, Maha10, Maha20, Maha30)
 df_clust_write <- left_join(df, clusters_sub)
 write.csv(df_clust_write, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"), row.names = F)
-# df_clust_write <- read.csv(paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"))
+# df_clust_write2 <- read.csv(paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"))
 # head(df_clust_write)
 
-# Write clusters and as shapefile for other plotting
-output_dir_shapefile <- "Model_Output/Iso/Shapefiles"
-dir.create(output_dir_shapefile)
 
-# Write lake polygons with Maha20 ID - NEW CLUSTERS
-clusters_shp <- clusters # %>% dplyr::select(-Maha10, -Maha30, -Maha100)
-st_write(clusters_shp, paste0(output_dir_shapefile, "/Lake_VoronoiPolygons_with_Maha20ClusterID.shp"))
-
-point_clusetrs_shp <- point_clusters # %>% dplyr::select(-Maha10, -Maha30, -Maha100)
-st_write(point_clusetrs_shp, paste0(output_dir_shapefile, "/Lake_Points_with_Maha20ClusterID.shp"))
+# Write clusters to original file - with new cluster numbers
+clusters_sub2 <- st_drop_geometry(clusters) %>% dplyr::select(NLA12_ID, Maha20)
+df_clust_write2 <- left_join(df, clusters_sub2)
+write.csv(df_clust_write2, paste0(output_dir, "Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS_NEWnumbers.csv"), row.names = F)
 
 
-# Write - old color codes
-# col.table.write <- data.frame(HexCode=cols, Maha20=1:20)
-# write.csv(col.table.write, paste0(cluster_dir, "/Cluster_Hex_Codes.csv"), row.names = F)
+# Write clusters and as shapefile for other plotting - sent to Mike at USGS for plotting cluster outlines (numbers don't matter here)
+# output_dir_shapefile <- "Model_Output/Iso/Shapefiles"
+# dir.create(output_dir_shapefile)
+# 
+# # Write lake polygons with Maha20 ID - NEW CLUSTERS
+# clusters_shp <- clusters # %>% dplyr::select(-Maha10, -Maha30, -Maha100)
+# st_write(clusters_shp, paste0(output_dir_shapefile, "/Lake_VoronoiPolygons_with_Maha20ClusterID.shp"))
+# 
+# point_clusetrs_shp <- point_clusters # %>% dplyr::select(-Maha10, -Maha30, -Maha100)
+# st_write(point_clusetrs_shp, paste0(output_dir_shapefile, "/Lake_Points_with_Maha20ClusterID.shp"))
+
+
 
 
 
