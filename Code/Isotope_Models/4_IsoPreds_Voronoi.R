@@ -6,13 +6,15 @@ library(stringr)
 library(deldir)
 library(sf)
 library(sfheaders)
-library(tigris) # in NAD83, default year of 2022
+library(tigris) # 2.2 in NAD83, default year of 2022
 library(crsuggest)
 library(spdep) # 1.3-5
 library(sp) # used in blog example for coordinates() function
 library(terra) # 1.7.78
 library(ggpubr)
 
+# Need to install tigris patch - now version 2.2
+# pak::pak("walkerke/tigris")
 
 
 output_dir <- "Model_Output/Iso/"
@@ -497,6 +499,9 @@ dev.off()
 clusters_orig <- clusters
 point_clusters_orig <- point_clusters
 
+# clusters <- clusters_orig
+# point_clusters <- point_clusters_orig
+
 clusters <- left_join(clusters, New_ColorsNumbers) %>% 
   dplyr::select(-c("Maha10", "Maha20", "Maha30", "Maha100")) %>% 
   rename(Maha20=New_Maha)
@@ -525,6 +530,14 @@ scale_fill_KV <- function(...){
   )
 }
 
+scale_color_TEXT <- function(...){
+  ggplot2:::manual_scale(
+    'color', 
+    values = setNames(c(rep("white", 3), "black", "black", "white", "black", "black","white", rep("black", 11)), 1:20)
+  )
+}
+
+
 # 20
 m20polys <- ggplot() +
   geom_sf(data=clusters, aes(fill=Maha20), col="white") +
@@ -533,7 +546,8 @@ m20polys <- ggplot() +
   geom_sf(data=df_sf, col="white", size=1)+
   # scale_fill_manual(values = cols) +
   scale_fill_KV() +
-  geom_sf_text(data = centroid, aes(label = Maha20), size=12, alpha=0.85, colour="black", show.legend = F)
+  geom_sf_text(data = centroid, aes(label = Maha20, color=Maha20), size=12, alpha=0.85,  show.legend = F) + # colour="black"
+  scale_color_TEXT()
 
 m20states <- ggplot() + 
   geom_sf(data=clusters, aes(fill=Maha20), col=NA) +
@@ -543,7 +557,8 @@ m20states <- ggplot() +
   geom_sf(data=states_tig, col="white", fill=NA)+
   # scale_fill_manual(values = cols)+
   scale_fill_KV() +
-  geom_sf_text(data = centroid, aes(label = Maha20), size=12, alpha=0.85, colour="black", show.legend = F)
+  geom_sf_text(data = centroid, aes(label = Maha20, color=Maha20), size=12, alpha=0.85,  show.legend = F) + # colour="black"
+  scale_color_TEXT()
 
 # Plot Mahalanobis 20 cluster with lake and state polys
 ggarrange(m20polys + 

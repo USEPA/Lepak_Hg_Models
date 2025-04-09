@@ -1,21 +1,21 @@
-Maha20,Precipitation,Log_Precip_Average,Color_code,New_Maha,Comment
-7,1,2.342996193,DC1C13,9,
-5,1,2.709917649,EA4C46,8,
-1,1,2.741548609,F07470,10,
-10,1,2.732143942,F1959B,7,"Previously not a part of the groupings, imperfect fit. Leave included now. "
-8,2,2.843520153,9B870D,4,
-9,2,2.890903002,C4AF18,13,
-4,2,2.937440859,FFD400,11,
-19,2,2.941958209,FFEA61,14,
-11,3,2.969058696,52C755,15,
-15,3,3.050713388,43B446,12,
-2,3,3.1053888,33A036,17,"Previously not a part of the groupings, imperfect fit. Leave included now. "
-18,3,3.12558713,248D27,5,"Previously not a part of the groupings, imperfect fit. Leave included now. "
-13,3,3.10318389,147917,20,"Previously not a part of the groupings, imperfect fit. Leave included now. "
-12,3,3.331062606,56608,3,"Previously not a part of the groupings, imperfect fit. Leave included now. "
-16,3,3.05857963,BFBFFF,19,
-6,3,3.073128244,A3A3FF,18,
-14,3,3.086265876,7879FF,16,
-17,3,3.189702654,4949FF,6,
-3,3,3.153057928,1F1FFF,2,
-20,3,3.367141327,00008B,1,
+Maha20,New_Maha,Color_code
+20,1,00008B
+12,3,0000C4
+3,2,1F1FFF
+13,20,4949FF
+6,18,7879FF
+14,16,A3A3FF
+16,19,BFBFFF
+17,6,56608
+15,12,248D27
+2,17,43B446
+18,5,90EE91
+11,15,FFEA61
+4,11,FFD400
+19,14,C4AF18
+8,4,9B870D
+9,13,F1959B
+1,10,F07470
+5,8,EA4C46
+10,7,DC1C13
+7,9,B12E21
