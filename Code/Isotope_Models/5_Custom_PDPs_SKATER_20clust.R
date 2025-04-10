@@ -104,10 +104,11 @@ preds <- rf.final$xvar.names # predictors
 # All_Dat_sub <- All_Dat %>% dplyr::select(NLA12_ID, all_of(preds), all_of(Isos), TrainTest)
 
 
-pdp_dat <- Preds_with_Clusters %>% dplyr::select(NLA12_ID, Maha20, all_of(preds))
+pdp_dat <- Preds_with_Clusters %>% dplyr::select(NLA12_ID, Maha20, New_Maha, all_of(preds))
 
 table(pdp_dat$Maha20) # 15 have at least 10
 
+names(Preds_with_Clusters)
 
 
 
@@ -237,18 +238,15 @@ for(j in 1:length(preds)){
 
 #### Make figures using output from previous loop ####
 
-# *** Note that figure should correspond to New_Maha IDs, but underlying cluster data is coded for original Maha20 IDs ***
+# *** Note that figure colors and labels should correspond to New_Maha IDs, but underlying cluster data is coded for original Maha20 IDs ***
 
 
-
-## *** EDIT THIS TO USE RYAN'S COLORS ##
 
 # Old Cluster colors 
 # cols2 <- sequential_hcl(5, palette = "Light Grays")
 # cols3 <- qualitative_hcl(17, palette = "Dark 3")
 # set.seed(13) # 5
 # cols <- sample(c(cols3, cols2[-c(4,5)]))
-# 
 # 
 # scale_color_KV <- function(...){
 #   ggplot2:::manual_scale(
@@ -264,8 +262,13 @@ scale_color_KV <- function(...){
     values = setNames(New_ColorsNumbers$Color_code, New_ColorsNumbers$New_Maha)
   )
 }
-values = setNames(New_ColorsNumbers$Color_code, New_ColorsNumbers$New_Maha)
 
+scale_color_KV_oldCl <- function(...){
+  ggplot2:::manual_scale(
+    'color', 
+    values = setNames(New_ColorsNumbers$Color_code, New_ColorsNumbers$Maha20)
+  )
+}
 
 pdp_dat$Cluster <- factor(pdp_dat$Maha20)
 
@@ -390,7 +393,7 @@ for(j in 1:length(preds)){
     coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
                     # ylim = range(res_origunit$Pred_D199_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
-    scale_color_KV() +
+    scale_color_KV_oldCl() +
     theme(legend.position="none")
   ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL_ICEcurvesOdd.png"), width=10, height=6)
   # Even lakes
@@ -405,7 +408,7 @@ for(j in 1:length(preds)){
     coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
     # ylim = range(res_origunit$Pred_D199_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)+
-    scale_color_KV() +
+    scale_color_KV_oldCl() +
     theme(legend.position="none")
   ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_ALL_ICEcurvesEven.png"), width=10, height=6)
   
@@ -437,7 +440,7 @@ for(j in 1:length(preds)){
     coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
     # ylim = range(res_origunit$Pred_D200_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
-    scale_color_KV() +
+    scale_color_KV_oldCl() +
     theme(legend.position="none")
   ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_ALL_ICEcurvesOdd.png"), width=10, height=6)
   # Even lakes
@@ -452,7 +455,7 @@ for(j in 1:length(preds)){
     coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
     # ylim = range(res_origunit$Pred_D200_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)+
-    scale_color_KV() +
+    scale_color_KV_oldCl() +
     theme(legend.position="none")
   ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_ALL_ICEcurvesEven.png"), width=10, height=6)
   
@@ -472,7 +475,7 @@ for(j in 1:length(preds)){
     # values = c("Artificial" = "dashed", "Natural" = "dotted"),
     # breaks=c("Artificial", "Natural")) +
     xlab(pred.var.lab) +
-    ylab("Mean D202 prediction") +
+    ylab("Mean d202 prediction") +
     coord_cartesian(xlim = range(res_origunit[pred.var]), 
                     ylim = range(res_origunit$Pred_D202_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
@@ -487,11 +490,11 @@ for(j in 1:length(preds)){
     geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% odd_lks,], aes(x=get(pred.var), y = Pred_D202_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) + # , col="gray20"
     geom_line(linewidth=2) + 
     xlab(pred.var.lab) +
-    ylab("D202 prediction") +
+    ylab("d202 prediction") +
     coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
     # ylim = range(res_origunit$Pred_D202_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F) +
-    scale_color_KV() +
+    scale_color_KV_oldCl() +
     theme(legend.position="none")
   ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_ALL_ICEcurvesOdd.png"), width=10, height=6)
   # Even lakes
@@ -502,11 +505,11 @@ for(j in 1:length(preds)){
     geom_line(data=ICE_origunit[ICE_origunit$NLA12_ID %in% evn_lks,], aes(x=get(pred.var), y = Pred_D202_origUnits, group=NLA12_ID, col=as.factor(Maha20)), alpha=0.2) +
     geom_line(linewidth=2) + 
     xlab(pred.var.lab) +
-    ylab("D202 prediction") +
+    ylab("d202 prediction") +
     coord_cartesian(xlim = range(res_origunit[pred.var])) + #, 
     # ylim = range(res_origunit$Pred_D202_origUnits))+
     geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)+
-    scale_color_KV() +
+    scale_color_KV_oldCl() +
     theme(legend.position="none")
   ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_ALL_ICEcurvesEven.png"), width=10, height=6)
   
@@ -522,13 +525,13 @@ for(j in 1:length(preds)){
     mutate(Isotope=case_match(Isotope,
                "Pred_D199_SD" ~ "D199",
                "Pred_D200_SD" ~ "D200",
-               "Pred_D202_SD" ~ "D202")) %>% 
+               "Pred_D202_SD" ~ "d202")) %>% 
     ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
     theme_minimal() +
     theme(text=element_text(size=20)) +
     annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
     geom_line(linewidth=2, aes(linetype=Isotope)) + 
-    scale_color_manual(values=c("black", "gray20", "gray40")) +
+    scale_color_manual(values=c("black", "black", "black")) + # black, gray20, gray40
     scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
     xlab(pred.var.lab) +
     ylab("Mean prediction (z)") +
@@ -546,6 +549,8 @@ for(j in 1:length(preds)){
   for(i in 1:length(unique(pdp_dat$Maha20))){
     
     skater_i <- sort(unique(pdp_dat$Maha20))[i]
+    newskater_i <- New_ColorsNumbers$New_Maha[which(New_ColorsNumbers$Maha20==skater_i)]
+    color_i <- New_ColorsNumbers$Color_code[which(New_ColorsNumbers$Maha20==skater_i)]
     
     if(skater_i %in% Cl_kp){
       
@@ -563,15 +568,15 @@ for(j in 1:length(preds)){
       annotations199 <- data.frame(
         xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.05,
         ypos =  max(res_origunit[paste0("Pred_D199_origUnits_Cluster", skater_i)]),
-        annotateText = c(paste0("Cluster ", skater_i)))
+        annotateText = c(paste0("Cluster ", newskater_i))) # Use new cluster number
       # -diff(range(res_origunit[paste0("Pred_D199_origUnits_Cluster", skater_i)]))*.01
 
         res_origunit %>%
         ggplot(aes(x =  get(pred.var) , y = get(paste0("Pred_D199_origUnits_Cluster", skater_i)))) +
         theme_minimal() +
         theme(text=element_text(size=20))+
-        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.3, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) + # Changed from cols[i]
         geom_line(linewidth=2) + 
         xlab(pred.var.lab) +
         ylab("Mean D199 prediction") +
@@ -579,7 +584,7 @@ for(j in 1:length(preds)){
                         ylim = range(res_origunit[paste0("Pred_D199_origUnits_Cluster", skater_i)]))+
         geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
         geom_text(data=annotations199,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
-      ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_Cluster",  skater_i, ".png"), width=10, height=6)
+      ggsave(paste0(fig_dir, "PDP_SKATER20/D199/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_Cluster",  newskater_i, ".png"), width=10, height=6) # Save in directory for new cluster number
       
       
 
@@ -589,14 +594,14 @@ for(j in 1:length(preds)){
       annotations200 <- data.frame(
         xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.05,
         ypos =  max(res_origunit[paste0("Pred_D200_origUnits_Cluster", skater_i)]),
-        annotateText = c(paste0("Cluster ", skater_i)))
+        annotateText = c(paste0("Cluster ", newskater_i)))
       
       res_origunit %>%
         ggplot(aes(x =  get(pred.var) , y = get(paste0("Pred_D200_origUnits_Cluster", skater_i)))) +
         theme_minimal() +
         theme(text=element_text(size=20))+
-        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.3, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) + # Changed from cols[i]
         geom_line(linewidth=2) + 
         xlab(pred.var.lab) +
         ylab("Mean D200 prediction") +
@@ -604,7 +609,7 @@ for(j in 1:length(preds)){
                         ylim = range(res_origunit[paste0("Pred_D200_origUnits_Cluster", skater_i)]))+
         geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
         geom_text(data=annotations200,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
-      ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_Cluster",  skater_i, ".png"), width=10, height=6)
+      ggsave(paste0(fig_dir, "PDP_SKATER20/D200/", pred.var.lab, "/PDP_D200_", pred.var.lab, "_Cluster",  newskater_i, ".png"), width=10, height=6)
 
       
       
@@ -612,22 +617,22 @@ for(j in 1:length(preds)){
       annotations202 <- data.frame(
         xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.05,
         ypos =  max(res_origunit[paste0("Pred_D202_origUnits_Cluster", skater_i)]),
-        annotateText = c(paste0("Cluster ", skater_i)))
+        annotateText = c(paste0("Cluster ", newskater_i)))
       
       res_origunit %>%
         ggplot(aes(x =  get(pred.var) , y = get(paste0("Pred_D202_origUnits_Cluster", skater_i)))) +
         theme_minimal() +
         theme(text=element_text(size=20))+
-        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.3, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) + # Changed from cols[i]
         geom_line(linewidth=2) + 
         xlab(pred.var.lab) +
-        ylab("Mean D202 prediction") +
+        ylab("Mean d202 prediction") +
         coord_cartesian(xlim = range(res_origunit[pred.var]), 
                         ylim = range(res_origunit[paste0("Pred_D202_origUnits_Cluster", skater_i)]))+
         geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F) +
         geom_text(data=annotations202,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
-      ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_Cluster",  skater_i, ".png"), width=10, height=6)
+      ggsave(paste0(fig_dir, "PDP_SKATER20/D202/", pred.var.lab, "/PDP_D202_", pred.var.lab, "_Cluster",  newskater_i, ".png"), width=10, height=6)
       
 
       
@@ -638,21 +643,21 @@ for(j in 1:length(preds)){
       annotations <- data.frame(
         xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.06,
         ypos =   max(iso_dat_cl$Mean_Prediction),
-        annotateText = c(paste0("Cluster ", skater_i)))
+        annotateText = c(paste0("Cluster ", newskater_i)))
       
       
       iso_dat_cl %>% 
         mutate(Isotope=case_match(Isotope,
                                   paste0("Pred_D199_SD_Cluster", skater_i) ~ "D199",
                                   paste0("Pred_D200_SD_Cluster", skater_i) ~ "D200",
-                                  paste0("Pred_D202_SD_Cluster", skater_i) ~ "D202")) %>% 
+                                  paste0("Pred_D202_SD_Cluster", skater_i) ~ "d202")) %>% 
         ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
         theme_minimal() +
         theme(text=element_text(size=20)) +
-        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[i]) +
+        annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.3, fill="gray60") +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) + # Changed from cols[i]
         geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
-        scale_color_manual(values=c("black", "gray20", "gray40")) +
+        scale_color_manual(values=c("black", "black", "black")) + # black, gray20, gray40
         scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
         xlab(pred.var.lab) +
         ylab("Mean prediction (z)") +
@@ -661,7 +666,7 @@ for(j in 1:length(preds)){
         theme(legend.key.size = unit(4,"line"))  +
         geom_text(data=annotations,aes(x=xpos,y=ypos,label=annotateText), size = 18/.pt)
       # , legend.position="bottom"
-      ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_Cluster", skater_i, ".png"), width=12, height=6)
+      ggsave(paste0(fig_dir, "PDP_SKATER20/All3/", pred.var.lab, "/PDP_", pred.var.lab, "_Cluster", newskater_i, ".png"), width=12, height=6)
       
 
     }
@@ -669,7 +674,7 @@ for(j in 1:length(preds)){
   
 }
 
-# Much narrower range of mean predictions than individual lake predictions - like because of interactions - see plots with ICE curves
+# Much narrower range of mean predictions than individual lake predictions - likely because of interactions - see plots with ICE curves
 
 # , xlim = range(Preds_with_Clusters[pred.var]), ylim = range(Preds_with_Clusters$Pred_D202_origUnits)
 # theme(legend.key.size = unit(2,"line"))  
@@ -679,10 +684,13 @@ for(j in 1:length(preds)){
 
 #### Multi-panel figure for univariate PDPs ####
 # Cluster colors - matches 4_IsoPreds_Voronoi.R colors and map
-cols2 <- sequential_hcl(5, palette = "Light Grays")
-cols3 <- qualitative_hcl(17, palette = "Dark 3")
-set.seed(13) # 5
-cols <- sample(c(cols3, cols2[-c(4,5)]))
+# cols2 <- sequential_hcl(5, palette = "Light Grays")
+# cols3 <- qualitative_hcl(17, palette = "Dark 3")
+# set.seed(13) # 5
+# cols <- sample(c(cols3, cols2[-c(4,5)]))
+
+
+
 
 pdp_dat$Cluster <- factor(pdp_dat$Maha20)
 
@@ -692,19 +700,26 @@ Cl_kp <- names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)>9]) # 15 clusters w
 names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)<10]) # "12" "13" "17" "18" "20"
 names(table(pdp_dat$Cluster)[table(pdp_dat$Cluster)<15]) # "12" "13" "17" "18" "20"
 
-pred.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s", "Hg0DryDep")
+pred.order <- c("Precip8110Cat", "RunoffCat", "Hg0DryDep", "LOI_PERCENT", "Evap_Inflow_ratio", "Tmean8110Cat", "SumForestCat", "CompStrgthCat",   "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s",  "PctOwWs_Mean")
 
-cl.order <- c("3", "8", "10", "5", "7", "1", "4", "15", "9", "16", "11", "14", "2", "19", "6")
-length(unique(cl.order))
-cl.order %in% Cl_kp
+
+# Order of old cluster numbers - new cluster numbers go in order 1-20
+cl.order <- New_ColorsNumbers %>% arrange(New_Maha) %>% dplyr::select(Maha20) %>% filter(Maha20 %in% Cl_kp) %>% pull(Maha20) %>% as.character()
+
+# cl.order <- c("3", "8", "10", "5", "7", "1", "4", "15", "9", "16", "11", "14", "2", "19", "6")
+# length(unique(cl.order))
+# cl.order %in% Cl_kp
 
 
 # j is column, i is row
 # [j, 1]
 # [j, i+1]
 
+New_ColorsNumbers
+
 # list.all <- NULL # Initialize list of plots
 myplots <- vector('list', length(pred.order)*(length(cl.order)+1))
+
 
 
 
@@ -758,24 +773,25 @@ for(j in 1:length(pred.order)){
       mutate(Isotope=case_match(Isotope,
                                 "Pred_D199_SD" ~ "D199",
                                 "Pred_D200_SD" ~ "D200",
-                                "Pred_D202_SD" ~ "D202")) 
+                                "Pred_D202_SD" ~ "d202")) 
     
     if(j==1){
       p1 <- all_plot %>% 
         ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
         theme_classic() +
-        theme(text=element_text(size=32)) +
+        theme(text=element_text(size=40)) + # 32
         annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-        geom_line(linewidth=2, aes(linetype=Isotope)) + 
-        scale_color_manual(values=c("black", "gray20", "gray40")) +
+        geom_line(linewidth=2.5, aes(linetype=Isotope)) + 
+        scale_color_manual(values=c("black", "black", "black")) +
         scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
         xlab(pred.var.lab) +
         # ylab(paste0("All lakes: Isotope SD")) +
         # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
-        ylab(paste(c(paste0("All lakes"), paste0("Predicted z")), collapse = '\n')) +
+        # ylab(paste(c(paste0("All lakes"), paste0("Predicted z")), collapse = '\n')) +
+        ylab("All lakes") +
         
         coord_cartesian(xlim = range(res[pred.var]))+
-        geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+        geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.05, "npc"), linewidth=.7) +
         theme(legend.key.size = unit(5,"line"),
               axis.title.x = element_blank(),
               legend.position="bottom",
@@ -789,16 +805,16 @@ for(j in 1:length(pred.order)){
         p1 <- all_plot %>% 
           ggplot(aes(x =  get(pred.var) , y = Mean_Prediction, col=Isotope)) + 
           theme_classic() +
-          theme(text=element_text(size=32)) +
+          theme(text=element_text(size=40)) +
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-          geom_line(linewidth=2, aes(linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          geom_line(linewidth=2.5, aes(linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "black", "black")) +
           scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
           xlab(pred.var.lab) +
           # ylab(paste0("All lakes: Isotope SD")) +
           # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.05, "npc"), linewidth=.7) +
           theme(legend.key.size = unit(5,"line"),
                 axis.title.x = element_blank(),
                 legend.position="bottom",
@@ -862,6 +878,8 @@ for(j in 1:length(pred.order)){
       
       
       skater_i <- cl.order[i]
+      newskater_i <- New_ColorsNumbers$New_Maha[which(New_ColorsNumbers$Maha20==skater_i)]
+      color_i <- New_ColorsNumbers$Color_code[which(New_ColorsNumbers$Maha20==skater_i)]
       
       # Subset pdp data to cluster and predictor
       x_dat_cl <- pdp_dat %>% filter(Maha20 %in% skater_i) %>% dplyr::select(one_of(pred.var))
@@ -870,7 +888,7 @@ for(j in 1:length(pred.order)){
       # Calculate 95% interval of observed predictor values
       x_95_int_cl <- quantile(x_dat_cl[,1], c(.025, .975))
       
-      color.index <- as.numeric(skater_i)
+      # color.index <- as.numeric(skater_i)
       
       
       # All isos by cluster - SD units
@@ -879,14 +897,14 @@ for(j in 1:length(pred.order)){
       annotations <- data.frame(
         xpos = min(res_origunit[pred.var]) + diff(range(res_origunit[pred.var]))*.06,
         ypos =   max(iso_dat_cl$Mean_Prediction),
-        annotateText = c(paste0("Cluster ", skater_i)))
+        annotateText = c(paste0("Cluster ", newskater_i)))
       
       
       dat_plot <- iso_dat_cl %>% 
         mutate(Isotope=case_match(Isotope,
                                   paste0("Pred_D199_SD_Cluster", skater_i) ~ "D199",
                                   paste0("Pred_D200_SD_Cluster", skater_i) ~ "D200",
-                                  paste0("Pred_D202_SD_Cluster", skater_i) ~ "D202")) 
+                                  paste0("Pred_D202_SD_Cluster", skater_i) ~ "d202")) 
      
       
       # j==1 & i==length(cl.order) # bottom left - needs y-title and x-title
@@ -901,21 +919,22 @@ for(j in 1:length(pred.order)){
       p_i <- dat_plot %>% 
         ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
         theme_classic() +
-        theme(text=element_text(size=32)) +
+        theme(text=element_text(size=40)) + # 32
         annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
-        geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
-        scale_color_manual(values=c("black", "gray20", "gray40")) +
+        annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
+        geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
+        scale_color_manual(values=c("black", "black", "black")) +
         scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
         xlab(pred.var.lab) +
-        ylab(paste(c(paste0("Cluster ", skater_i), paste0("Predicted z")), collapse = '\n')) +
-          # labs(y=expression(atop(bold("All lakes"),atop("Predicted z"))))
+        # ylab(paste(c(paste0("Cluster ", newskater_i), paste0("Predicted z")), collapse = '\n')) +
+        ylab(paste0("Cluster ", newskater_i)) +
+        # labs(y=expression(atop(bold("All lakes"),atop("Predicted z"))))
         
         coord_cartesian(xlim = range(res[pred.var]))+
-        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+        geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.05, "npc"), linewidth=.7) +
         theme(legend.key.size = unit(5,"line"), 
               legend.position="bottom",
-              legend.text = element_text(size=32),
+              legend.text = element_text(size=40), # 32
               legend.title = element_text(size=40)
               # legend.position="none"
               # axis.title.y = element_blank()
@@ -924,46 +943,50 @@ for(j in 1:length(pred.order)){
         } 
       
       # j==1 & i<length(cl.order) # first column without corner - needs y-title and no x-title
+      # ** Could remove x-axis numbers **
       if(j==1 & i<length(cl.order)){    
         p_i <- dat_plot %>% 
           ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
           theme_classic() +
-          theme(text=element_text(size=32)) +
+          theme(text=element_text(size=40)) +
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
-          geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
+          geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "black", "black")) +
           scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
           xlab(pred.var.lab) +
-          ylab(paste(c(paste0("Cluster ", skater_i), paste0("Predicted z")), collapse = '\n')) +
+          # ylab(paste(c(paste0("Cluster ", newskater_i), paste0("Predicted z")), collapse = '\n')) +
+          ylab(paste0("Cluster ", newskater_i)) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.05, "npc"), linewidth=.7) +
           theme(legend.key.size = unit(5,"line"), 
                 legend.position="bottom",
                 # legend.position="none",
                 axis.title.x = element_blank(),
-                legend.text = element_text(size=32),
-                legend.title = element_text(size=40)
+                legend.text = element_text(size=40),
+                legend.title = element_text(size=40),
+                axis.text.x=element_blank(), # Remove to keep all x-axes
+                axis.ticks.x=element_blank() # Remove to keep all x-axes
           )  +
           scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
       }     
       
       
       # j>1 & i==length(cl.order) # no y-title, needs x-title
-      if(j>1 & i==length(cl.order)){  
+      if(j>1 & i==length(cl.order)){   # Rest of bottom row
         p_i <- dat_plot %>% 
           ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
           theme_classic() +
-          theme(text=element_text(size=32)) +
+          theme(text=element_text(size=40)) +
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
-          geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
+          geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "black", "black")) +
           scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
           xlab(pred.var.lab) +
-          # ylab(paste0("Cluster ", skater_i, ": Mean prediction (z)")) +
+          # ylab(paste0("Cluster ", newskater_i, ": Mean prediction (z)")) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.05, "npc"), linewidth=.7) +
           theme(legend.key.size = unit(5,"line"), 
                 legend.position="bottom",
                 # legend.position="none",
@@ -975,26 +998,29 @@ for(j in 1:length(pred.order)){
       }
           
       # j>1 & i<length(cl.order) # no y-title, no x-title
+      # ** Could remove x-axis numbers **
       if(j>1 & i<length(cl.order)){  
         p_i <- dat_plot %>% 
           ggplot(aes(x =  get(pred.var) , y = Mean_Prediction)) + 
           theme_classic() +
-          theme(text=element_text(size=32)) +
+          theme(text=element_text(size=40)) +
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
-          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.65, fill=cols[color.index]) +
-          geom_line(linewidth=2, aes(col=Isotope, linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "gray20", "gray40")) +
+          annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
+          geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
+          scale_color_manual(values=c("black", "black", "black")) +
           scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
           xlab(pred.var.lab) +
           coord_cartesian(xlim = range(res[pred.var]))+
-          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.04, "npc"), linewidth=.7) +
+          geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.05, "npc"), linewidth=.7) +
           theme(legend.key.size = unit(5,"line"), 
                 legend.position="bottom",
                 # legend.position="none",
                 axis.title.y = element_blank(),
                 axis.title.x = element_blank(),
                 legend.text = element_text(size=32),
-                legend.title = element_text(size=40)
+                legend.title = element_text(size=40), 
+                axis.text.x=element_blank(), # Remove to keep all x-axes
+                axis.ticks.x=element_blank() # Remove to keep all x-axes
           )  +
           scale_y_continuous(breaks = round(range(dat_plot$Mean_Prediction), 2))
       }
@@ -1036,13 +1062,20 @@ myplots[[35]]
 
 wrap.plot <- wrap_plots(myplots, nrow=16, ncol=10, byrow=FALSE) +
   plot_layout(guides = 'collect') &
-  theme(legend.position = "bottom")
-ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrapLegendBottom.png"), width=60, height=48, limitsize=FALSE)
+  theme(legend.position = "bottom",
+        legend.text = element_text(size=48),
+        legend.title = element_text(size=48),
+        text=element_text(size=40))
+ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrapLegendBottom_reduceXaxes.png"), width=60, height=48, limitsize=FALSE)
+# ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrapLegendBottom.png"), width=60, height=48, limitsize=FALSE)
 
-wrap.plot <- wrap_plots(myplots, nrow=16, ncol=10, byrow=FALSE) +
-  plot_layout(guides = 'collect') &
-  theme(legend.position = "right")
-ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrapLegendRight.png"), width=60, height=46, limitsize=FALSE)
+# wrap.plot <- wrap_plots(myplots, nrow=16, ncol=10, byrow=FALSE) +
+#   plot_layout(guides = 'collect') &
+#   theme(legend.position = "right",
+#         legend.text = element_text(size=40),
+#         legend.title = element_text(size=40),
+#         text=element_text(size=40))
+# ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP_wrapLegendRight.png"), width=60, height=46, limitsize=FALSE)
 
 
 
@@ -1257,7 +1290,7 @@ for(j in 1:length(preds)){
     # ylim(range(res_origunit[pred.var.w])) +
     geom_tile(aes(fill=Pred_D202_origUnits)) +
     geom_contour(color = "white") +
-    scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean(range(res_origunit$Pred_D202_origUnits)), alpha=1, rev=F) +
+    scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean(range(res_origunit$Pred_D202_origUnits)), alpha=1, rev=F) +
     theme(text=element_text(size=20)) +
     xlab(paste0(pred.var.lab)) +
     ylab(paste0(pred.var.lab2)) +
@@ -1342,7 +1375,6 @@ range200 <- c( min(minD200, na.rm = T), max(maxD200, na.rm=T))
 range202 <- c( min(minD202, na.rm = T), max(maxD202, na.rm=T))
 mean200 <- mean(meanD200, na.rm = T)
 mean202 <- mean(meanD202, na.rm = T)
-
 
 # Loop for bivariate plots with fixed scale
 for(j in 1:length(preds)){
@@ -1445,7 +1477,7 @@ for(j in 1:length(preds)){
       # ylim(range(res_origunit[pred.var.w])) +
       geom_tile(aes(fill=Pred_D202_origUnits)) +
       geom_contour(color = "white") +
-      scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+      scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
       theme(text=element_text(size=20)) +
       xlab(paste0(pred.var.lab)) +
       ylab(paste0(pred.var.lab2)) +
@@ -1473,7 +1505,10 @@ col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "L
 # mean200 <- mean(meanD200, na.rm = T)
 # mean202 <- mean(meanD202, na.rm = T)
 
-pred.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s", "Hg0DryDep")
+# pred.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s", "Hg0DryDep")
+
+pred.order <- c("Precip8110Cat", "RunoffCat", "Hg0DryDep", "LOI_PERCENT", "Evap_Inflow_ratio", "Tmean8110Cat", "SumForestCat", "CompStrgthCat",   "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s",  "PctOwWs_Mean")
+
 
 # D199 
 biplots199 <- vector('list', length(pred.order)*length(pred.order))
@@ -1871,7 +1906,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
                   legend.text = element_text(size=40),
                   legend.title = element_text(size=48),
@@ -1890,7 +1925,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
                   legend.text = element_text(size=40),
                   legend.title = element_text(size=48),
@@ -1908,7 +1943,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
                   legend.text = element_text(size=40),
                   legend.title = element_text(size=48),
@@ -1927,7 +1962,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
                   legend.text = element_text(size=40),
                   legend.title = element_text(size=48),
@@ -2403,7 +2438,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
                   legend.text = element_text(size=48),
                   legend.title = element_text(size=56),
@@ -2422,7 +2457,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
                   legend.text = element_text(size=48),
                   legend.title = element_text(size=56),
@@ -2440,7 +2475,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
                   legend.text = element_text(size=48),
                   legend.title = element_text(size=56),
@@ -2459,7 +2494,7 @@ for(j in 1:length(pred.order)){
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
                   legend.text = element_text(size=48),
                   legend.title = element_text(size=56),

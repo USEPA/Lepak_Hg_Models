@@ -342,7 +342,7 @@ RFE_info  %>% filter(NumVars %in% 1:50) %>%
 ggsave(paste0(fig_dir, "/Avg_RFE_CV_MAE.png"), width=10, height=6)
 
 
-iso_colors <- c("D199" = "darkgreen", "D200" = "darkorange", "D202" = "blue", "Avg" = "black")
+iso_colors <- c("D199" = "darkgreen", "D200" = "darkorange", "d202" = "blue", "Avg" = "black")
 
 # Add Iso lines
 RFE_info  %>% filter(NumVars %in% 1:50) %>% 
@@ -354,8 +354,8 @@ RFE_info  %>% filter(NumVars %in% 1:50) %>%
   geom_line(aes(y=D199_MeanCV_mae, col="D199")) +
   geom_point(aes(y=D200_MeanCV_mae, col="D200")) +
   geom_line(aes(y=D200_MeanCV_mae, col="D200")) +
-  geom_point(aes(y=D202_MeanCV_mae, col="D202")) +
-  geom_line(aes(y=D202_MeanCV_mae, col="D202")) +
+  geom_point(aes(y=D202_MeanCV_mae, col="d202")) +
+  geom_line(aes(y=D202_MeanCV_mae, col="d202")) +
   labs( color = "Isotope") +
   scale_color_manual(values = iso_colors) +
   
@@ -381,7 +381,7 @@ Top_MAE_Mod <- read.csv(paste0(output_dir, "CV/CV_preds_Iter",i,".csv"))
 range(Top_MAE_Mod$D199)
 range(Top_MAE_Mod$Pred_D199)
 
-iso_colors <- c("D199" = "darkgreen", "D200" = "darkorange", "D202" = "blue", "Avg" = "black")
+iso_colors <- c("D199" = "darkgreen", "D200" = "darkorange", "d202" = "blue", "Avg" = "black")
 
 Top_MAE_Mod %>% ggplot(aes(x=D199, y=Pred_D199)) +
   geom_abline(intercept=0, slope=1, color="black", size=1.1) +
@@ -419,7 +419,7 @@ Top_MAE_Mod %>% ggplot(aes(x=D202, y=Pred_D202)) +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
   theme(text=element_text(size=20)) +
-  xlab("Observed D202") + ylab("Predicted D202")
+  xlab("Observed d202") + ylab("Predicted d202")
 ggsave(paste0(fig_dir, "/D202_Best_MAE_CVPred_vs_Obs.png"), width=8, height=6)
 
 
@@ -713,7 +713,7 @@ Test_Dat %>% ggplot(aes(x=D202, y=Pred_D202)) +
   theme_minimal() +
   coord_cartesian(xlim=c(-3.5,3.5), ylim=c(-3.5,3.5))+
   theme(text=element_text(size=20)) +
-  xlab("Observed D202") + ylab("Predicted D202")
+  xlab("Observed d202") + ylab("Predicted d202")
 ggsave(paste0(fig_dir, "/D202_Best_MAE_TEST_vs_Obs.png"), width=8, height=6)
 
 
@@ -764,7 +764,7 @@ ggplot(Top_MAE_Mod, aes(fill=Residual_D202, x=LON_DD83, y=LAT_DD83)) +
   geom_point(size=3, col="gray70", shape=21) + 
   theme_void() +
   geom_point(data=Test_Dat, size=4, aes(fill=Residual_D202, x=LON_DD83, y=LAT_DD83),  col="black", shape=22) +
-  scale_fill_continuous_divergingx(palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
+  scale_fill_continuous_divergingx(name = "Residual_d202", palette = 'RdBu', mid = 0, alpha=1, rev=T, breaks=seq(-3,3,1), limits=c(-3,3))
 ggsave(paste0(fig_dir, "/Best_MAE_Residuals_Space_D202.png"), width=10, height=6)
 
 
