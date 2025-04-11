@@ -1,7 +1,5 @@
 # Lepak_Hg_Models
 
-# Commit check in new org
-
 ### To do
 - What the project does
 - Why the project is useful
