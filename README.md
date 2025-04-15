@@ -84,11 +84,14 @@
 - Creates univariate PDPs (all lakes together and by cluster) and bivariate PDPs
 
 
+---
+
+## The remaining scripts below were run before the modeling scripts above to prep the data for modeling (first scripts in **Select_Isotope_Lakes**, then scripts in **Model_Prep**)
 
 
 
+### <ins>Preliminary scripts used to select isotope lakes (**Select_Isotope_Lakes**)</ins>
 
-### <ins>Preliminary scripts used to select isotope lakes</ins>
 
 #### Select_Isotope_Lakes/1_Check_bias.R 
 - Uses: Data/NARS_Hg_isotopes_031321.xlsx and Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
@@ -98,7 +101,6 @@
 #### Select_Isotope_Lakes/2_Sample_lakes.R 
 - Uses: Data/NARS_Hg_isotopes_031321.xlsx  and Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
 -	Randomly samples lakes in both LakeCat and NARS until 10 variable distributions are similar
--	Lake criteria for selection: STHG_ng_g > 30, not missing USGS_ID, not missing Gas_Hg_Hg0Conc_ng_m3, Ionic_Hg2Conc_ng_m3, Particle_Hg_HgPConc_ng_m3
 -	List of lakes to add in Data/Lakes_To_Add.csv – written 3-16-21
 
 #### Select_Isotope_Lakes/3_Format_Data_And_Final_Bias_Check.R
@@ -107,16 +109,15 @@
 -	Uses Data/LakeCat_NLA_Hg_isotopes_020421.xlsx
 -	Uses Data/NARS_Hg_isotopes_060622.xlsx
 -	Formats data and does final bias check on 10 vars with corrected NARS values
-    -	Does not filter to lakes with data in both LakeCat and NARS, checks variable distributions of all isotope lakes against distributions of all other lakes regardless of predictor availability
 -	Uses "Data/Weird_Data/Mismatch_Data_between_NARS_LakeCat_RYAN_CORRECTED.csv" to resolve discrepancies between NARS and LakeCat
 -	Replaces missing USGS IDs in NARS with LakeCat ID from Weird_Data/Mismatch_ID_between_NARS_LakeCat.csv
 -	Renames/shortens NARS variable names
--	Writes in /Formatted_Data/: NARS_final_[Date].csv, LakeCat_final_[Date].csv, AllLakes_AllVariables_final_[Date].csv, LakesInLakeCatAndNARS_All_Variables_final_[Date].csv
+-	Writes in **Formatted_Data**: NARS_final_[Date].csv, LakeCat_final_[Date].csv, AllLakes_AllVariables_final_[Date].csv, LakesInLakeCatAndNARS_All_Variables_final_[Date].csv
     -	I.e., data files of all lakes in NARS and LakeCat separately, plus merged datasets with full join of all lakes or only lakes in both datasets, as requested
 
 
 
-### <ins>Scripts used to select/aggregate predictor data, create train/test splits, and impute missing values</ins>
+### <ins>Scripts used to select/aggregate predictor data, create train/test splits, and impute missing values (**Model_Prep**)</ins>
 
 #### Model_Prep/1_Generate_Variable_Table.R
 -	Generates initial tables to help make decisions about predictor variables 
@@ -137,7 +138,7 @@
 #### Model_Prep/2_Select_predictors.R
 -	Uses coding system in “Variable_summary_LakesInBoth_AllVariables_113022.xlsx” to average multi-year predictors, sum certain land use predictors, use correlation to select between catchment vs. watershed variables, and generate final predictor list and data with new variables
 -	Writes final predictor set: Tables/Final_THg_preds_Date.csv
--	Writes data with new variables: Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_[Date\.csv
+-	Writes data with new variables: Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_[Date].csv
 
 #### Model_Prep/3_Impute_NA.R
 -	Uses "Formatted_Data/LakesInLakeCatAndNARS_AllVariables_final_ADDNEWVARS_2023-01-10.csv" created from Select_Predictors.R
