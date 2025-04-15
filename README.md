@@ -1,10 +1,60 @@
-# Lepak_Hg_Models
+## Lepak_Hg_Models
 
-### To do
-- What the project does
-- Why the project is useful
-- How users can get started with the project
-- Where users can get help with the project
+### Overview
+- This repository contains code to fit total mercury (abbreviated THg in scripts below vs. HgT in the manuscript) concentration, methylmercury (MeHg) concentration, loss on ignition (LOI), and multivariate mercury isotope (D199, D200, d202) random forest models as presented in the Lepak et al. (submitted) manuscript "Generating a mercury isoscape for CONUS lakes to map mercury depositional pathways and understand predictors for mercury and methylmercury concentrations in sediment."
+- This study seeks to be able to predict Hg concentrations and Hg isotope values across the contiguous United States (CONUS) to generate novel insights into the utility of Hg isotope values in understanding depositional pathways to lakes.
+- Below, the modeling scripts used to fit the random forest models are emphasized and described first. Following the modeling scripts, we describe the preliminary scripts that were used to select lakes to include in the isotope portion of the study, as well as scripts used to select/aggregate predictor data, create train/test splits, and impute missing values. For users wishing to run the models, these latter preliminary scripts can be skipped, and users can use the files already prepped for running the analyses as described below.
+  - For THg, MeHg, and LOI models, these files are:
+    - Formatted_Data/THg_MHg_Imputed_Training_Data.csv
+    - Formatted_Data/THg_MHg_Imputed_Test_Data.csv
+  - For isotope models, these files are:
+    - Formatted_Data/ISO_Imputed_Training_Data.csv
+    - Formatted_Data/ISO_Imputed_Test_Data.csv
+- For help with this code, uesrs can contact Kelsey Vitense (vitense.kelsey@epa.gov or kelsey.vitense@gamil.com)
+
+
+
+### RF modeling scripts
+- Note that only primary modeling scripts relevant for the manuscript are described below. Some directories contain an 'Extra' directory with additional models fit during development and are not described below.
+
+
+#### THg_Models/THg_RF.R
+-	log(THg) model with recursive feature elimination (RFE) 
+- Includes LOI as predictor
+
+
+#### THg_Models/THg_RF_CV_Subset_Selection.R
+-	log(THg) model with subset selection – include LOI as predictor
+- Uses RFE output from THg_RF.R, adds CV errors to RFE
+- Selects best subset using 1-SE rule and MAE
+- Creates error tables, visualizations, PDPs
+
+
+#### MeHg_Models/MeHg_wTHgLOI_RF.R
+-	log(MeHg) model with THg and LOI as predictors
+
+#### MeHg_Models/MeHg_wTHgLOI_RF_CV_Subset_Selection.R
+-	log(MeHg) model with THg and LOI as predictors with subset selection
+- Uses RFE output from MeHg_wTHgLOI_RF.R, adds CV errors to RFE
+- Selects best subset using 1-SE rule and MAE
+- Creates error tables, visualizations, PDPs
+
+
+
+#### LOI_Models/LOInoHgPreds_RF.R
+-	log(LOI) model excluding 9 GEOS-Chem Hg predictors and THg
+
+#### LOI_Models/LOInoHgPreds_RF_CV_Subset_Selection.R
+-	log(LOI) model excluding 9 GEOS-Chem Hg predictors and THg with subset selection
+- Uses RFE output from LOInoHgPreds_RF.R, adds CV errors to RFE
+- Selects best subset using 1-SE rule and MAE
+- Creates error tables, visualizations, PDPs
+
+
+#### ADD ISOTOPE MODELS AND SCRIPTS
+
+
+
 
 
 ### Preliminary scripts used to select isotope lakes
@@ -85,43 +135,7 @@
 
 
 
-### RF modeling scripts - NEED TO UPDATE
-- Note that only primary modeling scripts relevant for the manuscript are described below. Some directories contain an 'Extra' directory with additional models fit during development and are not described below.
 
-
-#### THg_Models/THg_RF.R
--	log(THg) model with RFE – include LOI as predictor
-
-
-#### THg_Models/THg_RF_CV_Subset_Selection.R
--	log(THg) model with subset selection – include LOI as predictor
-- Uses RFE output from THg_RF.R, adds CV errors to RFE
-- Selects best subset using 1-SE rule and MAE
-- Creates error tables, visualizations, PDPs
-
-
-#### MeHg_Models/MeHg_wTHgLOI_RF.R
--	log(MeHg) model with THg and LOI as predictors
-
-#### MeHg_Models/MeHg_wTHgLOI_RF_CV_Subset_Selection.R
--	log(MeHg) model with THg and LOI as predictors with subset selection
-- Uses RFE output from MeHg_wTHgLOI_RF.R, adds CV errors to RFE
-- Selects best subset using 1-SE rule and MAE
-- Creates error tables, visualizations, PDPs
-
-
-
-#### LOI_Models/LOInoHgPreds_RF.R
--	log(LOI) model excluding 9 GEOS-Chem Hg predictors and THg
-
-#### LOI_Models/LOInoHgPreds_RF_CV_Subset_Selection.R
--	log(LOI) model excluding 9 GEOS-Chem Hg predictors and THg with subset selection
-- Uses RFE output from LOInoHgPreds_RF.R, adds CV errors to RFE
-- Selects best subset using 1-SE rule and MAE
-- Creates error tables, visualizations, PDPs
-
-
-#### ADD ISOTOPE MODELS AND SCRIPTS
 
 
 
