@@ -1,7 +1,7 @@
 ## Lepak_Hg_Models
 
 ### Overview
-- This repository contains code to fit total mercury (abbreviated THg in script description below vs. HgT in the manuscript) concentration, methylmercury (MeHg) concentration, loss on ignition (LOI), and multivariate mercury isotope (D199, D200, d202) random forest models as presented in the Lepak et al. (submitted) manuscript "Generating a mercury isoscape for CONUS lakes to map mercury depositional pathways and understand predictors for mercury and methylmercury concentrations in sediment."
+- This repository contains code and data to fit total mercury (abbreviated THg in script description below vs. HgT in the manuscript) concentration, methylmercury (MeHg) concentration, loss on ignition (LOI), and multivariate mercury isotope (D199, D200, d202) random forest models as presented in the Lepak et al. (submitted) manuscript "Generating a mercury isoscape for CONUS lakes to map mercury depositional pathways and understand predictors for mercury and methylmercury concentrations in sediment."
 - This study seeks to be able to predict Hg concentrations and Hg isotope values across the contiguous United States (CONUS) to generate novel insights into the utility of Hg isotope values in understanding depositional pathways to lakes.
 - Below, the modeling scripts used to fit the random forest models are emphasized and described first. Following the modeling scripts, we describe the preliminary scripts that were used to select lakes to include in the isotope portion of the study, as well as scripts used to select/aggregate predictor data, create train/test splits, and impute missing values. For users wishing only to run/review the models, these latter preliminary scripts can be skipped, and users can use the availabl files already prepped for running the analyses as described below.
   - For THg, MeHg, and LOI models, prepped files are here:
@@ -16,10 +16,14 @@
 
 ### RF modeling scripts
 - Note that only primary modeling scripts relevant for the manuscript are described below. Some directories contain an 'Extra' directory with additional models fit during development and are not described below.
+- Each response below generally has two primary scripts: 
+  - The first script (ending in "_RF" or "_MVRF" does parameter tuning on the full model and conducts recursive feature elimination (RFE) to determine the order in which predictors should be removed from the model based on permutation variable importance.
+  - The second script (ending in "_CV_Subset_Selection") uses the RFE order from the above script to calculate cross-validation (CV) error at each RFE iteration to determine the optimal subset using the 1-SE rule, then refits this final model and calculates test errors. These scripts also create predicted vs. observed plots and spatial residual plots, and conduct Mantel spatial autocorrelation tests. For THg, MeHg, and LOI, code to create partial dependence plots (PDPs) can also be found in these scripts; for the isotope models, the PDP scripts are created using custom code and are described below.
 
 
 #### THg_Models/THg_RF.R
--	log(THg) model with recursive feature elimination (RFE) 
+-	Total mercury concentration model with response modeled on $log_{10}$-scale: $log_{10}(THg)$ 
+- Conducts recursive feature elimination (RFE) 
 - Includes LOI as predictor
 
 
