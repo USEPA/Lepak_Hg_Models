@@ -1,16 +1,16 @@
 ## Lepak_Hg_Models
 
 ### Overview
-- This repository contains code to fit total mercury (abbreviated THg in scripts below vs. HgT in the manuscript) concentration, methylmercury (MeHg) concentration, loss on ignition (LOI), and multivariate mercury isotope (D199, D200, d202) random forest models as presented in the Lepak et al. (submitted) manuscript "Generating a mercury isoscape for CONUS lakes to map mercury depositional pathways and understand predictors for mercury and methylmercury concentrations in sediment."
+- This repository contains code to fit total mercury (abbreviated THg in script description below vs. HgT in the manuscript) concentration, methylmercury (MeHg) concentration, loss on ignition (LOI), and multivariate mercury isotope (D199, D200, d202) random forest models as presented in the Lepak et al. (submitted) manuscript "Generating a mercury isoscape for CONUS lakes to map mercury depositional pathways and understand predictors for mercury and methylmercury concentrations in sediment."
 - This study seeks to be able to predict Hg concentrations and Hg isotope values across the contiguous United States (CONUS) to generate novel insights into the utility of Hg isotope values in understanding depositional pathways to lakes.
-- Below, the modeling scripts used to fit the random forest models are emphasized and described first. Following the modeling scripts, we describe the preliminary scripts that were used to select lakes to include in the isotope portion of the study, as well as scripts used to select/aggregate predictor data, create train/test splits, and impute missing values. For users wishing to run the models, these latter preliminary scripts can be skipped, and users can use the files already prepped for running the analyses as described below.
-  - For THg, MeHg, and LOI models, these files are:
+- Below, the modeling scripts used to fit the random forest models are emphasized and described first. Following the modeling scripts, we describe the preliminary scripts that were used to select lakes to include in the isotope portion of the study, as well as scripts used to select/aggregate predictor data, create train/test splits, and impute missing values. For users wishing only to run/review the models, these latter preliminary scripts can be skipped, and users can use the availabl files already prepped for running the analyses as described below.
+  - For THg, MeHg, and LOI models, prepped files are here:
     - Formatted_Data/THg_MHg_Imputed_Training_Data.csv
     - Formatted_Data/THg_MHg_Imputed_Test_Data.csv
-  - For isotope models, these files are:
+  - For isotope models, prepped files are here:
     - Formatted_Data/ISO_Imputed_Training_Data.csv
     - Formatted_Data/ISO_Imputed_Test_Data.csv
-- For help with this code, uesrs can contact Kelsey Vitense (vitense.kelsey@epa.gov or kelsey.vitense@gamil.com)
+- For help with this code, please contact Kelsey Vitense (vitense.kelsey@epa.gov or kelsey.vitense@gmail.com)
 
 
 
