@@ -14,15 +14,15 @@
 
 
 
-### RF modeling scripts
-- Each response below generally has two primary scripts: 
+### <ins>RF modeling scripts in **Code** directory </ins>
+- Each response below has two primary scripts: 
   - The first script (ending in **"_RF"** or **"_MVRF"** does parameter tuning on the full model and conducts recursive feature elimination (RFE) to determine the order in which predictors should be removed from the model based on permutation variable importance.
   - The second script (ending in **"_CV_Subset_Selection"**) uses the RFE order from the above script to calculate cross-validation (CV) error at each RFE iteration to determine the optimal subset using the 1-SE rule, then refits this final model and calculates error estimates. This script also creates predicted vs. observed plots and spatial residual plots, plus conducts Mantel spatial autocorrelation tests. For THg, MeHg, and LOI, code to create partial dependence plots (PDPs) can also be found in this script; for the isotope models, the PDP plots are created using additional custom scripts and are described below.
 - Note that only primary modeling scripts relevant for the manuscript are described below. Some directories contain an 'Extra' directory with additional models fit during development and are not described below.
 
 
 #### THg_Models/THg_RF.R
--	Total mercury concentration model with response modeled on log~10~-scale: $log_{10}(THg)$ 
+-	Total mercury concentration model with response modeled on log<sub>10</sub>-scale: $log_{10}(THg)$ 
 - Includes GEOS-Chem, LakeCat, and NLA predictor data, plus LOI
 - Conducts recursive feature elimination (RFE) 
 
@@ -33,27 +33,56 @@
 
 
 #### MeHg_Models/MeHg_wTHgLOI_RF.R
--	log(MeHg) model with THg and LOI as predictors
+-	Methylmercury concentration model with response modeled on log<sub>10</sub>-scale: $log_{10}(MeHg)$ 
+- Includes GEOS-Chem, LakeCat, and NLA predictor data, plus THg and LOI
+- Conducts recursive feature elimination (RFE) 
 
 #### MeHg_Models/MeHg_wTHgLOI_RF_CV_Subset_Selection.R
--	log(MeHg) model with THg and LOI as predictors with subset selection
-- Uses RFE output from MeHg_wTHgLOI_RF.R, adds CV errors to RFE
-- Selects best subset using 1-SE rule and MAE
-- Creates error tables, visualizations, PDPs
-
-
+-	$log_{10}(MeHg)$ model with subset selection
+- Uses RFE output from MeHg_wTHgLOI_RF.R, estimates CV errors, and selects best subset using 1-SE rule
+- Creates error tables, visualizations, and PDPs
 
 #### LOI_Models/LOInoHgPreds_RF.R
--	log(LOI) model excluding 9 GEOS-Chem Hg predictors and THg
+-	LOI model with response modeled on log<sub>10</sub>-scale: $log_{10}(LOI)$ 
+- Includes LakeCat and NLA predictor data
+- Conducts recursive feature elimination (RFE) 
+
 
 #### LOI_Models/LOInoHgPreds_RF_CV_Subset_Selection.R
--	log(LOI) model excluding 9 GEOS-Chem Hg predictors and THg with subset selection
-- Uses RFE output from LOInoHgPreds_RF.R, adds CV errors to RFE
-- Selects best subset using 1-SE rule and MAE
-- Creates error tables, visualizations, PDPs
+-	$log_{10}(LOI)$ model with subset selection
+- Uses RFE output from LOInoHgPreds_RF.R, estimates CV errors, and selects best subset using 1-SE rule
+- Creates error tables, visualizations, and PDPs
 
 
-#### ADD ISOTOPE MODELS AND SCRIPTS
+
+#### Isotope_Models/1_ISO_MVRF.R
+- Multivariate isotope model: (D199, D200, d202)
+- Includes GEOS-Chem, LakeCat, and NLA predictor data, plus THg, MeHg, and LOI
+- Conducts recursive feature elimination (RFE) 
+
+#### Isotope_Models/2_ISO_MVRF_CV_Subset_Selection.R
+-	Multivariate isotope model model with subset selection
+- Uses RFE output from 1_ISO_MVRF.R, estimates CV errors, and selects best subset using 1-SE rule
+- Creates error tables, predicted vs. obs plots, spatial residual plots
+
+
+#### Isotope_Models/3_Predict_ISO_MVRF_subset.R
+- Refits final isotope subset model to all 410 isotope lakes (train+test combined)
+- Uses fitted model to predict isotope response for all 1112 lakes
+- Writes predictions in **"Model_Output/Iso/Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24.csv"**
+  - Note that LOI was unnecessarily divided by 100 an extra time in isotope model fits and in the .csv file above (i.e., the original percentage was divided by 1000 instead of just 100). This is how it should be input into models and for generating PDPs, but for visualizations it was multiplied by 100 to be interpreted as a proportion.
+  
+
+#### Isotope_Models/4_IsoPreds_Voronoi.R
+- Uses SKATER algorithm to generate spatially constrained clusters of all 1112 lakes based on the 10 predictors in the reduced isotope model
+- Creates map of the resulting SKATER clusters
+- Writes data with original cluster numbers to: **"Model_Output/Iso/Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv"**
+- Writes data with reassigned cluster numbers to: **"Model_Output/Iso/Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS_NEWnumbers.csv"**
+
+
+#### Isotope_Models/5_Custom_PDPs_SKATER_20clust.R
+- Creates univariate PDPs (all lakes together and by cluster) and bivariate PDPs
+
 
 
 
