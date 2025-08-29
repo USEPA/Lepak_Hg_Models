@@ -221,10 +221,49 @@ plot_vars <- c(preds, "Omernik_II", "HUC2", "Pred_D199_origUnits", "Pred_D200_or
 plot(vor_ter_sf[plot_vars], max.plot=16)
 
 
-str(vor_ter_sf)
-vor_ter_sf$geometry
+
+##### Plots for graphical abstract #####
+df_sf_iso <- df_sf %>% filter(!is.na(Obs_D199_origUnits))
+
+png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/Precip_map.png"), width = 800, height = 500)
+plot(main_tig, lwd=2)
+plot(df_sf_iso["Precip8110Cat"], add=T, pch=16, cex=2, pal = hcl.colors(12, "Mint", rev=T))
+dev.off()
+
+png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/DryDep_map.png"), width = 800, height = 500)
+plot(main_tig, lwd=2)
+plot(df_sf_iso["Hg0DryDep"], add=T, pch=16, cex=2, pal = hcl.colors(10, "Heat", rev=T))
+dev.off()
+
+png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/Carbon_map.png"), width = 800, height = 500)
+plot(main_tig, lwd=2)
+plot(df_sf_iso["LOI_PERCENT"], add=T, pch=16, cex=2, pal = hcl.colors(10, "Heat2", rev=T))
+dev.off()
 
 
+png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/Runoff_map.png"), width = 800, height = 500)
+plot(main_tig, lwd=2)
+plot(df_sf_iso["RunoffCat"], add=T, pch=16, cex=2, pal = hcl.colors(9, "BrwnYl", rev=T))
+dev.off()
+
+
+
+png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/D199_map.png"), width = 800, height = 500)
+plot(main_tig, lwd=2)
+plot(df_sf["Obs_D199_origUnits"], add=T, pch=16, cex=2,  pal = hcl.colors(10, "Peach", rev=T))
+dev.off()
+
+png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/D200_map.png"), width = 800, height = 500)
+plot(main_tig, lwd=2)
+plot(df_sf["Obs_D200_origUnits"], add=T, pch=16, cex=2,  pal = hcl.colors(10, "Purp", rev=T))
+dev.off()
+
+png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/D202_map.png"), width = 800, height = 500)
+plot(main_tig, lwd=2)
+plot(df_sf["Obs_D202_origUnits"], add=T, pch=16, cex=2,  pal = hcl.colors(10, "Blues", rev=T))
+dev.off()
+
+##########
 
 
 #  **** To do?? ****
