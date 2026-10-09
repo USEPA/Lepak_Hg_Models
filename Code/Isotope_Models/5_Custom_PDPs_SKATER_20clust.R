@@ -236,7 +236,7 @@ for(j in 1:length(preds)){
 
 
 
-#### Make figures using output from previous loop ####
+#### Make univariate figures using output from previous loop- NOT IN MANUSCRIPT ####
 
 # *** Note that figure colors and labels should correspond to New_Maha IDs, but underlying cluster data is coded for original Maha20 IDs ***
 
@@ -682,14 +682,13 @@ for(j in 1:length(preds)){
 
 
 
-#### Multi-panel figure for univariate PDPs ####
+#### Multi-panel figure for univariate PDPs  - IN MANUSCRIPT####
+
 # Cluster colors - matches 4_IsoPreds_Voronoi.R colors and map
 # cols2 <- sequential_hcl(5, palette = "Light Grays")
 # cols3 <- qualitative_hcl(17, palette = "Dark 3")
 # set.seed(13) # 5
 # cols <- sample(c(cols3, cols2[-c(4,5)]))
-
-
 
 
 pdp_dat$Cluster <- factor(pdp_dat$Maha20)
@@ -782,8 +781,8 @@ for(j in 1:length(pred.order)){
         theme(text=element_text(size=40)) + # 32
         annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
         geom_line(linewidth=2.5, aes(linetype=Isotope)) + 
-        scale_color_manual(values=c("black", "black", "black")) +
-        scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+        scale_color_manual(values=c("black", "black", "black"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg )) +
+        scale_linetype_manual(values=c("solid", "dashed", "dotted"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg ))+
         xlab(pred.var.lab) +
         # ylab(paste0("All lakes: Isotope SD")) +
         # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
@@ -808,8 +807,8 @@ for(j in 1:length(pred.order)){
           theme(text=element_text(size=40)) +
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
           geom_line(linewidth=2.5, aes(linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "black", "black")) +
-          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          scale_color_manual(values=c("black", "black", "black"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg )) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg ))+
           xlab(pred.var.lab) +
           # ylab(paste0("All lakes: Isotope SD")) +
           # labs(y=expression(atop(bold("All lakes"),atop("Isotope SD")))) +
@@ -923,8 +922,8 @@ for(j in 1:length(pred.order)){
         annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
         annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
         geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
-        scale_color_manual(values=c("black", "black", "black")) +
-        scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+        scale_color_manual(values=c("black", "black", "black"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg )) +
+        scale_linetype_manual(values=c("solid", "dashed", "dotted"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg ))+
         xlab(pred.var.lab) +
         # ylab(paste(c(paste0("Cluster ", newskater_i), paste0("Predicted z")), collapse = '\n')) +
         ylab(paste0("Cluster ", newskater_i)) +
@@ -952,8 +951,8 @@ for(j in 1:length(pred.order)){
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
           annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
           geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "black", "black")) +
-          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          scale_color_manual(values=c("black", "black", "black"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg )) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg ))+
           xlab(pred.var.lab) +
           # ylab(paste(c(paste0("Cluster ", newskater_i), paste0("Predicted z")), collapse = '\n')) +
           ylab(paste0("Cluster ", newskater_i)) +
@@ -981,8 +980,8 @@ for(j in 1:length(pred.order)){
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
           annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
           geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "black", "black")) +
-          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          scale_color_manual(values=c("black", "black", "black"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg )) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg ))+
           xlab(pred.var.lab) +
           # ylab(paste0("Cluster ", newskater_i, ": Mean prediction (z)")) +
           coord_cartesian(xlim = range(res[pred.var]))+
@@ -1007,8 +1006,8 @@ for(j in 1:length(pred.order)){
           annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
           annotate("rect", xmin=x_95_int_cl[1], xmax=x_95_int_cl[2], ymin=-Inf, ymax=Inf, alpha=0.7, fill=color_i) +
           geom_line(linewidth=2.5, aes(col=Isotope, linetype=Isotope)) + 
-          scale_color_manual(values=c("black", "black", "black")) +
-          scale_linetype_manual(values=c("solid", "dashed", "dotted"))+
+          scale_color_manual(values=c("black", "black", "black"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg )) +
+          scale_linetype_manual(values=c("solid", "dashed", "dotted"), labels=expression(Delta^199*Hg,Delta^200*Hg, delta^202*Hg ))+
           xlab(pred.var.lab) +
           coord_cartesian(xlim = range(res[pred.var]))+
           geom_rug(data=x_dat_cl, aes(x=get(pred.var)), inherit.aes = F, length = unit(0.05, "npc"), linewidth=.7) +
@@ -1082,8 +1081,10 @@ ggsave(plot=wrap.plot, filename=paste0(fig_dir, "PDP_SKATER20/All_Univariate_PDP
 
 
 
-# Bivariate PDPs
+### Bivariate PDPs ####
 
+
+# Do calculations
 
 cl <- makeCluster(10)
 doParallel::registerDoParallel(cl)
@@ -1192,7 +1193,7 @@ print(end.time-start.time) # 2.6 min for one combo (x90 = 234 min = 3.9 hr seria
 
 
   
-#### Make bivariate figures using output from above code - variable scale
+#### Make bivariate figures using output from above code - variable scale  - NOT IN MANUSCRIPT ####
   
 for(j in 1:length(preds)){
   print(j)
@@ -1309,9 +1310,9 @@ for(j in 1:length(preds)){
 
 
 
-#### Make bivariate figures with fixed color scale ####
+#### Make bivariate figures with fixed color scale (within each isotope) - NOT IN MANUSCRIPT ####
 
-#### Get max and min predicted values over all predictor pairs ####
+#### Get max and min predicted values over all predictor pairs
 minD199 <- NA
 maxD199 <- NA
 minD200 <- NA
@@ -1320,6 +1321,7 @@ minD202 <- NA
 maxD202 <- NA   
 meanD200 <- NA
 meanD202 <- NA
+meanD199 <- NA
 
 for(j in 1:length(preds)){
   print(j)
@@ -1356,6 +1358,7 @@ for(j in 1:length(preds)){
     
     minD199 <- c(minD199, min(res_origunit$Pred_D199_origUnits))
     maxD199 <- c(maxD199, max(res_origunit$Pred_D199_origUnits))
+    meanD199 <- c(meanD199, mean(res_origunit$Pred_D199_origUnits))
     
     minD200 <- c(minD200, min(res_origunit$Pred_D200_origUnits))
     maxD200 <- c(maxD200, max(res_origunit$Pred_D200_origUnits))  
@@ -1375,8 +1378,9 @@ range200 <- c( min(minD200, na.rm = T), max(maxD200, na.rm=T))
 range202 <- c( min(minD202, na.rm = T), max(maxD202, na.rm=T))
 mean200 <- mean(meanD200, na.rm = T)
 mean202 <- mean(meanD202, na.rm = T)
+mean199 <- mean(meanD199, na.rm = T) # -0.008
 
-# Loop for bivariate plots with fixed scale
+# Loop for bivariate plots with fixed scale within isotope
 for(j in 1:length(preds)){
   print(j)
   
@@ -1494,10 +1498,44 @@ for(j in 1:length(preds)){
 }
 
 
-col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv", "Hg0DryDep")
+### Bivariates plots with fixed color scale across all isotopes  - NOT IN MANUSCRIPT ####
+# This didn't work well
+# range199 <- c( min(minD199, na.rm = T), max(maxD199, na.rm=T))
+# range200 <- c( min(minD200, na.rm = T), max(maxD200, na.rm=T))
+# range202 <- c( min(minD202, na.rm = T), max(maxD202, na.rm=T))
+# mean200 <- mean(meanD200, na.rm = T)
+# mean202 <- mean(meanD202, na.rm = T)
+# mean199 <- mean(meanD199, na.rm = T) # -0.008
+# range_iso <- c(min(c(range199[1], range200[1], range202[1])), max(c(range199[2], range200[2], range202[2])))
+# 
+#     # D199 all lakes PDP - origUnit
+#     # Also use coord_cartesian here because cuts off outer row otherwise
+#     p199 <- res_origunit %>%
+#       ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+#       theme_minimal() +
+#       coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+#       # xlim(range(res_origunit[pred.var]))+
+#       # ylim(range(res_origunit[pred.var.w])) +
+#       geom_tile(aes(fill=Pred_D199_origUnits)) +
+#       geom_contour(color = "white") +
+#       # scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range_iso,  p1=.9, l2 = 95) +
+#       scale_fill_gradientn(
+#         colours = c( "blue", "cyan",  "white", "yellow", "red"),
+#         values = scales::rescale(c(-1,  -0.1, 0, 0.5,   0.1), from = c(-1, 0.1)),
+#         limits = c(-1, 0.1)
+#       )      +
+#       theme(text=element_text(size=20)) +
+#       xlab(paste0(pred.var.lab)) +
+#       ylab(paste0(pred.var.lab2)) +
+#       geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+#     p199
+#     ggsave(paste0(fig_dir, "PDP_SKATER20/D199/BIVARIATE_PLOTS_FIXED3/", pred.var.lab, "/PDP_D199_", pred.var.lab, "_", pred.var.lab2, ".png"), width=7, height=5)
 
 
-#### Multi-panel figure for bivariate PDPs - each isotope separate ####
+# col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv", "Hg0DryDep")
+
+
+#### Multi-panel figure for bivariate PDPs - each isotope separate  - IN SUPPLEMENT ####
 # Make sure run loop above to get ranges for each isotope
 # range199 <- c( min(minD199, na.rm = T), max(maxD199, na.rm=T))
 # range200 <- c( min(minD200, na.rm = T), max(maxD200, na.rm=T))
@@ -1512,6 +1550,8 @@ pred.order <- c("Precip8110Cat", "RunoffCat", "Hg0DryDep", "LOI_PERCENT", "Evap_
 
 # D199 
 biplots199 <- vector('list', length(pred.order)*length(pred.order))
+
+## ** Changed range199 to c(-0.11,0.1)
 
 for(j in 1:length(pred.order)){
   print(j)
@@ -1581,16 +1621,16 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^199*Hg), palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=c(-0.11,0.11),  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48), # 40
+                  legend.title = element_text(size=60, margin = margin(b = 10)), # 48
+                  legend.key.size = unit(2.5, "cm"), # 2
                   axis.title.x = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
 
         if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
@@ -1600,15 +1640,15 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^199*Hg), palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=c(-0.11,0.11),  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm")) +
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60, margin = margin(b = 10)),
+                  legend.key.size = unit(2.5, "cm")) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
@@ -1618,36 +1658,36 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^199*Hg), palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=c(-0.11,0.11),  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48), # 40
+                  legend.title = element_text(size=60, margin = margin(b = 10)), # 48
+                  legend.key.size = unit(2.5, "cm"), # 2
                   axis.title.y = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
 
         if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
           # no axis labels
           p199 <- res_origunit %>%
-            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits)) +
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D199_origUnits))+
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^199*Hg), palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=c(-0.11,0.11),  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48), # 40
+                  legend.title = element_text(size=60, margin = margin(b = 10)), # 48
+                  legend.key.size = unit(2.5, "cm"), # 2
                   axis.title.y = element_blank(),
                   axis.title.x = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2)) 
         }
         
         # All axis labels
@@ -1679,6 +1719,9 @@ wrap.plot199 <- wrap_plots(biplots199, nrow=10, ncol=10, byrow=FALSE) +
   plot_layout(guides = 'collect') &
   theme(legend.position = "right")
 ggsave(plot=wrap.plot199, filename=paste0(fig_dir, "PDP_SKATER20/D199_All_Bivariate_PDP_wrapLegendRight_reduceLabs.png"), width=70, height=45, limitsize=FALSE)
+
+
+
 
 
 
@@ -1751,16 +1794,16 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
                   axis.title.x = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
@@ -1770,15 +1813,15 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm")) +
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm")) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
@@ -1788,16 +1831,16 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
                   axis.title.y = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
@@ -1807,17 +1850,17 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
                   axis.title.y = element_blank(),
                   axis.title.x = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
           
         p200
@@ -1833,6 +1876,160 @@ wrap.plot200 <- wrap_plots(biplots200, nrow=10, ncol=10, byrow=FALSE) +
   theme(legend.position = "right")
 ggsave(plot=wrap.plot200, filename=paste0(fig_dir, "PDP_SKATER20/D200_All_Bivariate_PDP_wrapLegendRight_reduceLabs.png"), width=70, height=45, limitsize=FALSE)
 
+
+
+
+########################### D200 blue yellow 2 #######################
+# D200
+biplots200 <- vector('list', length(pred.order)*length(pred.order))
+
+for(j in 1:length(pred.order)){
+  print(j)
+  
+  for(w in 1:length(pred.order)){
+    
+    print(w)
+    
+    biplots200[[(j-1)*(length(pred.order)) + w]] <- local({
+      
+      j <- j
+      w <- w
+      pred.var <- pred.order[j] 
+      
+      pred.var.lab <- pred.var
+      if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+      
+      pred.var.w <- pred.order[w]
+      
+      pred.var.lab2 <- pred.var.w
+      if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
+      
+      
+      if(pred.var==pred.var.w){
+        p200 <- ggplot() + 
+          annotate("text", x = 4, y = 25, size=16, label = paste(pred.var.lab)) + 
+          theme_void()
+        
+      } else{
+        
+        # Read in PDP dat
+        res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
+        
+        # Predicted isos in original units
+        res_origunit <- res
+        
+        # Transform appropriate columns
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+        
+        colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+        
+        
+        
+        # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+        
+        # Observed values for 2 vars of interest
+        obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
+        if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
+        
+        
+        
+        # D200 all lakes PDP - origUnit
+        # Center D200 at mean
+        # Also use coord_cartesian here because cuts off outer row otherwise
+        
+        if(j==1 & w<10){
+          # y-axis label
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Yellow 2', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # both labels
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Yellow 2', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm")) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # x-axis label
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Yellow 2', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
+                  axis.title.y = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
+          # no axis labels
+          p200 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D200_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(Delta^200 * Hg), palette = 'Blue-Yellow 2', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
+                  axis.title.y = element_blank(),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        p200
+      }
+    })
+  }
+}
+
+biplots200[[2]]
+
+wrap.plot200 <- wrap_plots(biplots200, nrow=10, ncol=10, byrow=FALSE) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "right")
+ggsave(plot=wrap.plot200, filename=paste0(fig_dir, "PDP_SKATER20/D200_All_Bivariate_PDP_wrapLegendRight_reduceLabs_BLUEYELLOW2.png"), width=70, height=45, limitsize=FALSE)
+#################################
 
 
 
@@ -1905,16 +2102,16 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
                   axis.title.x = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
@@ -1924,15 +2121,15 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm")) +
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm")) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
@@ -1942,16 +2139,16 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
                   axis.title.y = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
@@ -1961,17 +2158,17 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
-            scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=40),
-                  legend.text = element_text(size=40),
-                  legend.title = element_text(size=48),
-                  legend.key.size = unit(2, "cm"),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
                   axis.title.y = element_blank(),
                   axis.title.x = element_blank()) +
             xlab(paste0(pred.var.lab)) +
-            ylab(paste0(pred.var.lab2)) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.09, shape=16, size=1)
+            ylab(paste0(pred.var.lab2))
         }
         
         p202
@@ -1988,6 +2185,165 @@ wrap.plot202 <- wrap_plots(biplots202, nrow=10, ncol=10, byrow=FALSE) +
 ggsave(plot=wrap.plot202, filename=paste0(fig_dir, "PDP_SKATER20/D202_All_Bivariate_PDP_wrapLegendRight_reduceLabs.png"), width=70, height=45, limitsize=FALSE)
 
 
+############################ D202 PURPLE BROWN ###########################
+# D202
+biplots202 <- vector('list', length(pred.order)*length(pred.order))
+
+for(j in 1:length(pred.order)){
+  print(j)
+  
+  for(w in 1:length(pred.order)){
+    
+    print(w)
+    
+    biplots202[[(j-1)*(length(pred.order)) + w]] <- local({
+      
+      j <- j
+      w <- w
+      pred.var <- pred.order[j] 
+      
+      pred.var.lab <- pred.var
+      if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+      
+      pred.var.w <- pred.order[w]
+      
+      pred.var.lab2 <- pred.var.w
+      if(pred.var.w == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab2 <- "WetLossConv"
+      
+      
+      if(pred.var==pred.var.w){
+        p202 <- ggplot() + 
+          annotate("text", x = 4, y = 25, size=16, label = paste(pred.var.lab)) + 
+          theme_void()
+        
+      } else{
+        
+        # Read in PDP dat
+        res <- readRDS(paste0(output_dir, "PDP/Bivariate/", paste0(pred.var.lab), "/",paste0(pred.var.lab), "_", paste0(pred.var.lab2),   "_PDP_dat.rds"))
+        
+        # Predicted isos in original units
+        res_origunit <- res
+        
+        # Transform appropriate columns
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D199"), function(x) ( x * Iso_stats$D199[2] ) + Iso_stats$D199[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D200"), function(x) ( x * Iso_stats$D200[2] ) + Iso_stats$D200[1]))
+        res_origunit <- res_origunit %>%  mutate(across(starts_with("Pred_D202"), function(x) ( x * Iso_stats$D202[2] ) + Iso_stats$D202[1]))
+        
+        colnames(res_origunit) <- gsub("SD", "origUnits", colnames(res_origunit))
+        
+        
+        
+        # For plotting LOI, multiply LOI by 100 because was unnecessarily divided by 100 an extra time in isotope models. 
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res$LOI_PERCENT <- 100*res$LOI_PERCENT
+        if(pred.var == "LOI_PERCENT"| pred.var.w == "LOI_PERCENT") res_origunit$LOI_PERCENT <- 100*res_origunit$LOI_PERCENT
+        
+        # Observed values for 2 vars of interest
+        obs_dat <- pdp_dat %>% dplyr::select(one_of(pred.var), one_of(pred.var.w))  # subset by cluster here in cluster loop
+        if(pred.var == "LOI_PERCENT" | pred.var.w == "LOI_PERCENT") obs_dat$LOI_PERCENT <- 100*obs_dat$LOI_PERCENT
+        
+        
+        
+        # D202 all lakes PDP - origUnit
+        # Center D202 at mean
+        # Also use coord_cartesian here because cuts off outer row otherwise
+        
+        if(j==1 & w<10){
+          # y-axis label
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Purple-Brown', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        if(j==1 & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # both labels
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Purple-Brown', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm")) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% 10 == 0){
+          # x-axis label
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Purple-Brown', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
+                  axis.title.y = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% 10 != 0)){
+          # no axis labels
+          p202 <- res_origunit %>%
+            ggplot(aes(x =  get(pred.var), y = get(pred.var.w),  z=Pred_D202_origUnits)) +
+            theme_minimal() +
+            coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
+            geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
+            geom_contour(color = "white") +
+            scale_fill_continuous_diverging(name=expression(delta^202 * Hg), palette = 'Purple-Brown', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
+            theme(text=element_text(size=40),
+                  legend.text = element_text(size=48),
+                  legend.title = element_text(size=60),
+                  legend.key.size = unit(2.5, "cm"),
+                  axis.title.y = element_blank(),
+                  axis.title.x = element_blank()) +
+            xlab(paste0(pred.var.lab)) +
+            ylab(paste0(pred.var.lab2))
+        }
+        
+        p202
+      }
+    })
+  }
+}
+
+biplots202[[2]]
+
+wrap.plot202 <- wrap_plots(biplots202, nrow=10, ncol=10, byrow=FALSE) +
+  plot_layout(guides = 'collect') &
+  theme(legend.position = "right")
+ggsave(plot=wrap.plot202, filename=paste0(fig_dir, "PDP_SKATER20/D202_All_Bivariate_PDP_wrapLegendRight_reduceLabs_PURPLEBROWN.png"), width=70, height=45, limitsize=FALSE)
+############################################
+
+
+
+
+
+#### STOPPED HERE ####
+
+# See OneNote for proposed changes
 
 
 
@@ -2098,6 +2454,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2106,8 +2463,7 @@ for(j in 1:length(pred.order)){
                   legend.key.size = unit(2, "cm"),
                   axis.title.x = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if(j==1 & ((j-1)*(length(pred.order)) + w) %% length(pred.order) == 0){
@@ -2117,6 +2473,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2124,8 +2481,7 @@ for(j in 1:length(pred.order)){
                   legend.title = element_text(size=56),
                   legend.key.size = unit(2, "cm")) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% length(pred.order) == 0){
@@ -2135,6 +2491,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2143,8 +2500,7 @@ for(j in 1:length(pred.order)){
                   legend.key.size = unit(2, "cm"),
                   axis.title.y = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% length(pred.order) != 0)){
@@ -2154,6 +2510,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D199_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D199", palette = 'Blue-Red', mid=0, alpha=1, rev=F, limits=range199,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2163,8 +2520,7 @@ for(j in 1:length(pred.order)){
                   axis.title.y = element_blank(),
                   axis.title.x = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
        
         p199
@@ -2269,6 +2625,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2277,8 +2634,7 @@ for(j in 1:length(pred.order)){
                   legend.key.size = unit(2, "cm"),
                   axis.title.x = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if(j==1 & ((j-1)*(length(pred.order)) + w) %% length(pred.order) == 0){
@@ -2288,6 +2644,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2295,8 +2652,7 @@ for(j in 1:length(pred.order)){
                   legend.title = element_text(size=56),
                   legend.key.size = unit(2, "cm")) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% length(pred.order) == 0){
@@ -2306,6 +2662,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2314,8 +2671,7 @@ for(j in 1:length(pred.order)){
                   legend.key.size = unit(2, "cm"),
                   axis.title.y = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% length(pred.order) != 0)){
@@ -2325,6 +2681,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D200_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="D200", palette = 'Blue-Red', mid=mean200, alpha=1, rev=F, limits=range200,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2334,8 +2691,7 @@ for(j in 1:length(pred.order)){
                   axis.title.y = element_blank(),
                   axis.title.x = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         p200
@@ -2437,6 +2793,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2445,8 +2802,7 @@ for(j in 1:length(pred.order)){
                   legend.key.size = unit(2, "cm"),
                   axis.title.x = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if(j==1 & ((j-1)*(length(pred.order)) + w) %% length(pred.order) == 0){
@@ -2456,6 +2812,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2463,8 +2820,7 @@ for(j in 1:length(pred.order)){
                   legend.title = element_text(size=56),
                   legend.key.size = unit(2, "cm")) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if( (j!=1) & ((j-1)*(length(pred.order)) + w) %% length(pred.order) == 0){
@@ -2474,6 +2830,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2482,8 +2839,7 @@ for(j in 1:length(pred.order)){
                   legend.key.size = unit(2, "cm"),
                   axis.title.y = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         if( (j!=1) & (((j-1)*(length(pred.order)) + w) %% length(pred.order) != 0)){
@@ -2493,6 +2849,7 @@ for(j in 1:length(pred.order)){
             theme_minimal() +
             coord_cartesian(xlim = range(res_origunit[pred.var]), ylim=range(res_origunit[pred.var.w]), expand=T) +
             geom_tile(aes(fill=Pred_D202_origUnits)) +
+            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.25, shape=16, size=1) +
             geom_contour(color = "white") +
             scale_fill_continuous_diverging(name="d202", palette = 'Blue-Red', mid=mean202, alpha=1, rev=F, limits=range202,  p1=.9, l2 = 95) +
             theme(text=element_text(size=48),
@@ -2502,8 +2859,7 @@ for(j in 1:length(pred.order)){
                   axis.title.y = element_blank(),
                   axis.title.x = element_blank()) +
             xlab(pred.var.lab.def) +
-            ylab(pred.var.lab2.def) +
-            geom_point(data=obs_dat, aes(x=get(pred.var), y=get(pred.var.w)), inherit.aes = F, alpha=.2, shape=16, size=1)
+            ylab(pred.var.lab2.def)
         }
         
         p202

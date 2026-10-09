@@ -723,3 +723,252 @@ stopCluster(cl)
 #   theme(text=element_text(size=20))  +
 #   xlab("WetLossLS_Loss_soluble_spec_large_scale_precip")
 # ggsave(paste0(fig_dir, "PDP/Bivariate/PDP_WetLossLS_Runoff_PDP.png"), width=7, height=5)
+
+
+
+############
+
+# Make precip PDP by postive/negative D199
+Preds_with_Clusters <- read.csv("Model_Output/Iso/Isotope_Predictions_All_Lakes_FINALFINALMOD_2024-01-24_WITH_SKATER_CLUSTERS.csv")
+names(Preds_with_Clusters)
+
+pdp_dat <- Train_Dat %>% dplyr::select(NLA12_ID, all_of(final.preds))
+iso_dat <- Preds_with_Clusters %>% dplyr::select(NLA12_ID, Pred_D199_origUnits)
+
+pdp_dat <- pdp_dat %>% left_join(iso_dat)
+pdp_dat$D199 <- "Pos"
+pdp_dat$D199[pdp_dat$Pred_D199_origUnits<0] <- "Neg"
+
+pdp_dat$D199alt <- "Int"
+pdp_dat$D199alt[pdp_dat$Pred_D199_origUnits< (-0.05)] <- "Neg"
+pdp_dat$D199alt[pdp_dat$Pred_D199_origUnits> (0.05)] <- "Pos"
+
+# Modified pdp code from pdp package
+# for(j in 1:length(preds)){
+#   
+#   start.time <- Sys.time()
+#   
+#   print(j)
+  
+  pred.var <- "Precip8110Cat" # preds[j] #
+  
+  pred.var.lab <- pred.var
+  # if(pred.var == "WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s") pred.var.lab <- "WetLossConv"
+  
+  
+  # Obs values of predictor var
+  x <- pdp_dat[, pred.var]
+  
+  # Set limits of predictor x-axis
+  # lim.j <- round(quantile(x, probs=c(0.05, 0.95)), 6)
+  lim.j <- round(quantile(x, probs=c(0, 1)), 6)
+  
+  # Resolution of predictor on x-axis
+  res <- 40 # Each grid step is 2.5% of the range of the variable (could also do quantiles)
+  pred.val <- seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/res)
+  names(pred.val) <- names(pred.var)
+  
+  # pred.val <- seq(from = min(x, na.rm = TRUE), to = max(x, na.rm = TRUE),
+  # length = res)
+  
+  pred.grid <- expand.grid(pred.val, KEEP.OUT.ATTRS = FALSE) 
+  names(pred.grid) <- pred.var
+  
+  
+  
+  
+  #### First try just neg/pos D199
+  
+  
+  ### Calculate PDP/ICE data
+  Lake_Preds_Save <- NULL # Data frame of all lake-specific predictions at different x-vals (ICE)
+  Iso_Mean_Preds <- NULL # Data frame of mean predictions overall and by cluster (PDP)
+  
+  # i is index for x-value
+  for(i in seq_len(nrow(pred.grid))){
+    temp <- pdp_dat
+    
+    # replace variable of interest with single value of interest, leave rest of predictors as-is
+    temp[, pred.var] <- pred.grid[i, pred.var] 
+    rf_predict_All <- predict(rf.final, newdata=temp)
+    
+    Lake_Preds_i <- data.frame(TempName = pred.grid[i, pred.var], # Placeholder for x variable 
+                               log10THg_pred = rf_predict_All,
+                               D199  = pdp_dat$D199 ,
+                               D199alt  = pdp_dat$D199alt ,
+                               NLA12_ID = pdp_dat$NLA12_ID)
+    names(Lake_Preds_i)[1] <- pred.var # Add x-var name
+    
+    # Bind all lake-specific predictions here - save after i loop
+    Lake_Preds_Save <- rbind(Lake_Preds_Save, Lake_Preds_i)
+    
+    
+    # Calculate mean predicted HgT at x-value i across all lakes
+    iso_mean_preds_temp <- data.frame(Pred_logHgT = mean(Lake_Preds_i$log10THg_pred))
+    
+    
+    # Mean predicted log10THg at x-value i for each D199; k is D199 index
+    cl_iso_mean_preds_temp_jn <- list() # list to store mean predictions by cluster
+    
+    for(k in seq_len(length(unique(Lake_Preds_i$D199))) ){
+      
+      # Cluster k (D199 group)
+      cl <- sort(unique(Lake_Preds_i$D199))[k]
+      
+      cluster_sub <- Lake_Preds_i %>% filter(D199==cl)
+      
+      # Calculate mean predicted log10THg at x-value i in cluster k (D199 group)
+      cl_iso_mean_preds_temp <- data.frame(Pred_logHgT = mean(cluster_sub$log10THg_pred))
+      
+      names(cl_iso_mean_preds_temp) <- c(paste0('Pred_logHgT_D199',cl))
+      
+      cl_iso_mean_preds_temp_jn[[k]] <- cl_iso_mean_preds_temp
+    }
+    
+    cl_iso_mean_preds_temp_jn_df <- data.frame(do.call('cbind', cl_iso_mean_preds_temp_jn))
+    
+    # Join all-lake-mean-preds with cluster-level-mean-preds for i
+    join_iso_mean_preds <- cbind(iso_mean_preds_temp, cl_iso_mean_preds_temp_jn_df)
+    
+    
+    Iso_Mean_Preds <- rbind(Iso_Mean_Preds, join_iso_mean_preds)
+  }
+  # End loop through x-vals (pred.grid)
+  
+  # end.time <- Sys.time()
+  # print(end.time-start.time) # 20.14093  secs for all lakes, 1 predictor
+  # 
+  # Write all lake-specific predictions for ICE curves
+  # saveRDS(Lake_Preds_Save, paste0(output_dir, "PDP/", pred.var.lab, "_ICE_dat.rds"))
+  
+  # Bind mean predictions with pred.grid for saving and plotting
+  resD199 <- cbind(pred.grid, Iso_Mean_Preds)
+  resD199_long <- pivot_longer(resD199, cols ="Pred_logHgT_D199Neg":"Pred_logHgT_D199Pos", names_to = "D199", values_to = "Mean_Prediction")
+  
+# }
+  
+  x_dat <- pdp_dat %>% dplyr::select(one_of(pred.var))  # subset by cluster here in cluster loop
+  x_95_int <- quantile(x_dat[,1], c(.025, .975))
+  
+  # logHgT by pos/neg D199 all lakes PDP - origUnit
+  resD199_long %>%
+    mutate(D199=case_match(D199,
+                              "Pred_logHgT_D199Neg" ~ "Neg",
+                              "Pred_logHgT_D199Pos" ~ "Pos")) %>% 
+    ggplot(aes(x =  get(pred.var) , y = Mean_Prediction , col=D199  )) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    scale_color_manual(values=c("blue", "firebrick")) + # black, gray20, gray40
+    
+    ylab("Mean log(HgT) prediction") +
+    # coord_cartesian(xlim = range(res[pred.var]), 
+    #                 ylim = range(res$Pred_logHgT))#+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
+  ggsave(paste0(fig_dir, "PDP/HgT_vs_Precip_byD199_0.png"), width=10, height=6)
+  
+  
+  
+  
+  
+  
+  
+  
+  #### Now try D199alt
+  
+  
+  ### Calculate PDP/ICE data
+  Lake_Preds_Save <- NULL # Data frame of all lake-specific predictions at different x-vals (ICE)
+  Iso_Mean_Preds <- NULL # Data frame of mean predictions overall and by cluster (PDP)
+  
+  # i is index for x-value
+  for(i in seq_len(nrow(pred.grid))){
+    temp <- pdp_dat
+    
+    # replace variable of interest with single value of interest, leave rest of predictors as-is
+    temp[, pred.var] <- pred.grid[i, pred.var] 
+    rf_predict_All <- predict(rf.final, newdata=temp)
+    
+    Lake_Preds_i <- data.frame(TempName = pred.grid[i, pred.var], # Placeholder for x variable 
+                               log10THg_pred = rf_predict_All,
+                               D199  = pdp_dat$D199 ,
+                               D199alt  = pdp_dat$D199alt ,
+                               NLA12_ID = pdp_dat$NLA12_ID)
+    names(Lake_Preds_i)[1] <- pred.var # Add x-var name
+    
+    # Bind all lake-specific predictions here - save after i loop
+    Lake_Preds_Save <- rbind(Lake_Preds_Save, Lake_Preds_i)
+    
+    
+    # Calculate mean predicted HgT at x-value i across all lakes
+    iso_mean_preds_temp <- data.frame(Pred_logHgT = mean(Lake_Preds_i$log10THg_pred))
+    
+    
+    # Mean predicted log10THg at x-value i for each D199alt; k is D199alt index
+    cl_iso_mean_preds_temp_jn <- list() # list to store mean predictions by cluster
+    
+    for(k in seq_len(length(unique(Lake_Preds_i$D199alt))) ){
+      
+      # Cluster k (D199alt group)
+      cl <- sort(unique(Lake_Preds_i$D199alt))[k]
+      
+      cluster_sub <- Lake_Preds_i %>% filter(D199alt==cl)
+      
+      # Calculate mean predicted log10THg at x-value i in cluster k (D199alt group)
+      cl_iso_mean_preds_temp <- data.frame(Pred_logHgT = mean(cluster_sub$log10THg_pred))
+      
+      names(cl_iso_mean_preds_temp) <- c(paste0('Pred_logHgT_D199',cl))
+      
+      cl_iso_mean_preds_temp_jn[[k]] <- cl_iso_mean_preds_temp
+    }
+    
+    cl_iso_mean_preds_temp_jn_df <- data.frame(do.call('cbind', cl_iso_mean_preds_temp_jn))
+    
+    # Join all-lake-mean-preds with cluster-level-mean-preds for i
+    join_iso_mean_preds <- cbind(iso_mean_preds_temp, cl_iso_mean_preds_temp_jn_df)
+    
+    
+    Iso_Mean_Preds <- rbind(Iso_Mean_Preds, join_iso_mean_preds)
+  }
+  # End loop through x-vals (pred.grid)
+  
+  # end.time <- Sys.time()
+  # print(end.time-start.time) # 20.14093  secs for all lakes, 1 predictor
+  # 
+  # Write all lake-specific predictions for ICE curves
+  # saveRDS(Lake_Preds_Save, paste0(output_dir, "PDP/", pred.var.lab, "_ICE_dat.rds"))
+  
+  # Bind mean predictions with pred.grid for saving and plotting
+  res <- cbind(pred.grid, Iso_Mean_Preds)
+  res_long <- pivot_longer(res, cols ="Pred_logHgT_D199Int":"Pred_logHgT_D199Pos", names_to = "D199", values_to = "Mean_Prediction")
+  
+  # saveRDS(res, paste0(output_dir, "PDP/", pred.var.lab, "_PDP_dat.rds"))
+  # }
+  
+  x_dat <- pdp_dat %>% dplyr::select(one_of(pred.var))  # subset by cluster here in cluster loop
+  x_95_int <- quantile(x_dat[,1], c(.025, .975))
+  
+  # logHgT by pos/neg D199 all lakes PDP - origUnit
+  res_long %>%
+    mutate(D199=case_match(D199,
+                           "Pred_logHgT_D199Neg" ~ "Neg",
+                           "Pred_logHgT_D199Pos" ~ "Pos",
+                           "Pred_logHgT_D199Int" ~ "Int")) %>% 
+    ggplot(aes(x =  get(pred.var) , y = Mean_Prediction , col=D199  )) +
+    theme_minimal() +
+    theme(text=element_text(size=20))+
+    annotate("rect", xmin=x_95_int[1], xmax=x_95_int[2], ymin=-Inf, ymax=Inf, alpha=0.2, fill="gray60") +
+    geom_line(linewidth=2) + 
+    xlab(pred.var.lab) +
+    scale_color_manual(values=c("gray20", "blue", "firebrick")) + # black, gray20, gray40
+    
+    ylab("Mean log(HgT) prediction") +
+    # coord_cartesian(xlim = x_95_int)+
+    #                 ylim = range(res$Pred_logHgT))#+
+    geom_rug(data=x_dat, aes(x=get(pred.var)), inherit.aes = F)
+  ggsave(paste0(fig_dir, "PDP/HgT_vs_Precip_byD199_05.png"), width=10, height=6)
+  
+  
+ 

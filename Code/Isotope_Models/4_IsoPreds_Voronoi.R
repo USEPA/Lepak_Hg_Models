@@ -225,6 +225,114 @@ plot(vor_ter_sf[plot_vars], max.plot=16)
 ##### Plots for graphical abstract #####
 df_sf_iso <- df_sf %>% filter(!is.na(Obs_D199_origUnits))
 
+head(df_sf_iso)
+
+# D199 categories - measured
+df_sf_iso$D199_cat <- "Zero"
+df_sf_iso$D199_cat[df_sf_iso$Obs_D199_origUnits< (-0.1)] <- "Neg"
+df_sf_iso$D199_cat[df_sf_iso$Obs_D199_origUnits> (0.1)] <- "Pos"
+
+table(df_sf_iso$D199_cat)/length(df_sf_iso$D199_cat)
+
+# For .1:
+# Pos: 27%, Zero: 38%, Neg:35%
+
+# For .05:
+# Pos: 36%, Zero: 17%, Neg: 48%
+
+# D199 categories - predicted
+# df_sf_iso$D199_cat_pred <- "Zero"
+# df_sf_iso$D199_cat_pred[df_sf_iso$Pred_D199_origUnits< (-0.1)] <- "Neg"
+# df_sf_iso$D199_cat_pred[df_sf_iso$Pred_D199_origUnits> (0.1)] <- "Pos"
+# 
+# table(df_sf_iso$D199_cat_pred)/length(df_sf_iso$D199_cat_pred)
+# For 0.1:
+# Pos: 26%, Zero: 39%, Neg:36%
+
+
+# Plot D199 categories for TOC
+ggplot() +
+  geom_sf(data = main_tig, fill = "white", color = "black", size=1) +
+  geom_sf(data = df_sf_iso, aes(color = D199_cat, shape=D199_cat, fill=D199_cat), size = 3) +
+  # scale_color_brewer(palette = "Set1") +
+  theme_void() +
+  scale_color_manual(values = c(
+    "Neg" = "#67a9cf",
+    "Zero" = "black",
+    "Pos" = "#c22126"
+  )) +
+  scale_shape_manual(values = c(
+    "Pos" = 24,  # upward triangle
+    "Zero" = 21,  # filled circle
+    "Neg" = 25   # downward triangle
+  )) +
+  scale_fill_manual(values = c(
+    "Neg" = "#67a9cf",
+    "Zero" = "black",
+    "Pos" = "#c22126"
+  )) +
+  theme(legend.position = "none")
+  # labs(color = "Category")
+ggsave(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/D199_category_map_lightblue.pdf"),  width = 8, height = 6)
+
+ggplot() +
+  geom_sf(data = main_tig, fill = "white", color = "black", size=1) +
+  geom_sf(data = df_sf_iso, aes(color = D199_cat, shape=D199_cat, fill=D199_cat), size = 3) +
+  # scale_color_brewer(palette = "Set1") +
+  theme_void() +
+  scale_color_manual(values = c(
+    "Neg" = "#4393C3",
+    "Zero" = "black",
+    "Pos" = "#c22126"
+  )) +
+  scale_shape_manual(values = c(
+    "Pos" = 24,  # upward triangle
+    "Zero" = 21,  # filled circle
+    "Neg" = 25   # downward triangle
+  )) +
+  scale_fill_manual(values = c(
+    "Neg" = "#4393C3",
+    "Zero" = "black",
+    "Pos" = "#c22126"
+  )) +
+  theme(legend.position = "none")
+# labs(color = "Category")
+ggsave(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/D199_category_map_medblue.pdf"),  width = 8, height = 6)
+
+ggplot() +
+  geom_sf(data = main_tig, fill = "white", color = "black", size=1) +
+  geom_sf(data = df_sf_iso, aes(color = D199_cat, shape=D199_cat, fill=D199_cat), size = 3) +
+  # scale_color_brewer(palette = "Set1") +
+  theme_void() +
+  scale_color_manual(values = c(
+    "Neg" = "dodgerblue",
+    "Zero" = "black",
+    "Pos" = "#c22126"
+  )) +
+  scale_shape_manual(values = c(
+    "Pos" = 24,  # upward triangle
+    "Zero" = 21,  # filled circle
+    "Neg" = 25   # downward triangle
+  )) +
+  scale_fill_manual(values = c(
+    "Neg" = "dodgerblue",
+    "Zero" = "black",
+    "Pos" = "#c22126"
+  )) +
+  theme(legend.position = "none")
+# labs(color = "Category")
+ggsave(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/D199_category_map_dodgerblue.pdf"),  width = 8, height = 6)
+
+# Plot NLA HgT locations for TOC
+ggplot() +
+  geom_sf(data = main_tig, fill = "white", color = "black", size=1) +
+  geom_sf(data = df_sf, aes(), size = 3) +
+  # scale_color_brewer(palette = "Set1") +
+  theme_void()
+ggsave(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/All_lakes.pdf"),  width = 8, height = 6)
+
+
+
 png(paste0("Figures/Manuscript_Figure_Files/Graphical_Abstract/Precip_map.png"), width = 800, height = 500)
 plot(main_tig, lwd=2)
 plot(df_sf_iso["Precip8110Cat"], add=T, pch=16, cex=2, pal = hcl.colors(12, "Mint", rev=T))
