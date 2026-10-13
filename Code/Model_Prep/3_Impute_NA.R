@@ -105,6 +105,21 @@ ggplot(Data, aes(fill=TrainTest, col=TrainTest, x=SumForestCat, after_stat(densi
 
 
 
+### Total missingness summary in Train/Test lakes - for summary in manuscript ####
+Miss_summary_dat <- Data %>% filter(TrainTest=="Train" | TrainTest=="Test") %>% dplyr::select(c(Final_THg_preds$Variable))
+
+Overall_Var_NA <- data.frame(Variable=names(Miss_summary_dat))
+
+for(i in 1:ncol(Miss_summary_dat)){
+  Overall_Var_NA$NumNA_Of1076[i] <- sum(is.na(Miss_summary_dat[,i]))
+  Overall_Var_NA$Type[i] <- typeof(as.matrix(Miss_summary_dat[,i]))
+  Overall_Var_NA$Sample_SD[i] <- sd(as.matrix(Miss_summary_dat[,i]), na.rm=T) # Use to standardize RMSE
+}
+
+Overall_Var_NA$PercentNA <- Overall_Var_NA$NumNA_Of1076/1076
+Overall_Var_NA %>% arrange(desc(PercentNA)) %>% head()
+
+
 ##############################################################################
 ### Impute data using just training data plus lakes without THg ####
 # Assess quality of categorical predictions - if poor remove
@@ -121,6 +136,7 @@ Impute_dat_preds_wTEST <- Impute_dat_wTEST %>% dplyr::select(c(Final_THg_preds$V
 
 # Test_dat <- Data %>% filter(TrainTest=="Test") %>% dplyr::select(c("NLA12_ID", "STHG_ng_g", "SMHG_ng_g", Final_THg_preds$Variable))
 # Test_dat_preds <- Test_dat %>% dplyr::select(c(Final_THg_preds$Variable))
+
 
 
 
