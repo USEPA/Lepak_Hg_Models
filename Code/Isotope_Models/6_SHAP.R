@@ -62,13 +62,18 @@ preds <- rf.final$xvar.names # predictors
 Train_run <- Train_Dat[, colnames(Train_Dat) %in% c(preds, response_var)]
 nump <- ncol(Train_run)-3    # Number predictors (subtracting responses)
 
+# Refit final model with only 2000 trees to reduce calculation time
 set.seed(73) 
 rf.final2000  <- rfsrc(Multivar(D199, D200, D202) ~., data = Train_run, samptype="swr", importance=FALSE, splitrule = "mahalanobis", mtry=max(floor(mtry_par*nump), 1), ntree=2000, block.size=1, nodesize = 1)
-# Reduce ntree here
+
+
+
 
 
 train_dat <- Train_Dat %>% dplyr::select(NLA12_ID, Maha20, all_of(preds))
 all_dat <- Preds_with_Clusters %>% dplyr::select(NLA12_ID, Maha20, all_of(preds))
+
+
 
 pred_fun <- function(m, x) {
   pred <- predict(m, newdata=x)$regrOutput
@@ -81,6 +86,7 @@ pred_fun(rf.final2000, head(train_dat))
 # mod1 <- rfsrc(Multivar(mpg, wt ) ~ ., data = mtcars, importance = TRUE)
 # x <- c("cyl", "disp", "hp", "drat", "qsec", "vs", "am", "gear", "carb")
 
+# Shap values for just isotope lakes
 set.seed(38) 
 shap_values <- kernelshap(
   rf.final2000, 
@@ -89,9 +95,10 @@ shap_values <- kernelshap(
   # bg_X = train_dat,  # Usually small random sample
   pred_fun = pred_fun
 )
-saveRDS(shap_values, paste0(output_dir, "SHAP/shap_traindat_100bg_2000tr.rds"))
+# saveRDS(shap_values, paste0(output_dir, "SHAP/shap_traindat_100bg_2000tr.rds"))
 shap_values_train <- readRDS(paste0(output_dir, "SHAP/shap_traindat_100bg_2000tr.rds"))
 
+# Shap values for all lakes
 set.seed(38) 
 shap_values_all <- kernelshap(
   rf.final2000, 
@@ -105,31 +112,76 @@ shap_values_all <- readRDS(paste0(output_dir, "SHAP/shap_alldat_200bg_2000tr.rds
 
 
 
-
 sv.train <- shapviz(shap_values_train)
+
 # names(sv.train) <- response_var  # Not yet automatically
 colnames(sv.train$D199)[colnames(sv.train$D199)=="WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s"] <- "WetLossConv"
 colnames(sv.train$D200)[colnames(sv.train$D200)=="WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s"] <- "WetLossConv"
 colnames(sv.train$D202)[colnames(sv.train$D202)=="WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s"] <- "WetLossConv"
 
-# Reorder for plotting
-col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv", "Hg0DryDep")
+# Mean absolute shap values by predictor for each isotope and overall
+m199 <- colMeans(abs(sv.train$D199$S))
+m200 <- colMeans(abs(sv.train$D200$S))
+m202 <- colMeans(abs(sv.train$D202$S))
+
+# tab_by_response <- bind_rows(
+#   tibble(predictor = names(m199), response = "D199", mean_abs_shap = as.numeric(m199)),
+#   tibble(predictor = names(m200), response = "D200", mean_abs_shap = as.numeric(m200)),
+#   tibble(predictor = names(m202), response = "D202", mean_abs_shap = as.numeric(m202))
+# )
+
+mean_abs_across <- (m199 + m200 + m202) / 3
+mean_abs_across <- sort(mean_abs_across, decreasing = TRUE)
+mean_abs_across
+
+
+# Reorder for plotting - by average abs shap value across isotopes
+# col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv", "Hg0DryDep")
+
+# Or could change this to order by D199 importance?
+col.order <- names(mean_abs_across)
+
 sv.train$D199 <- sv.train$D199[, col.order]
 sv.train$D200 <- sv.train$D200[, col.order]
 sv.train$D202 <- sv.train$D202[, col.order]
 
 
+
+## All lakes
 sv.all <- shapviz(shap_values_all)
+
 # names(sv.all) <- response_var  # Not yet automatically
 colnames(sv.all$D199)[colnames(sv.all$D199)=="WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s"] <- "WetLossConv"
 colnames(sv.all$D200)[colnames(sv.all$D200)=="WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s"] <- "WetLossConv"
 colnames(sv.all$D202)[colnames(sv.all$D202)=="WetLossConv_Loss_of_soluble_species_scavenged_by_cloud_updrafts_in_moist_convection_kg_s"] <- "WetLossConv"
 
-# Reorder for plotting
-col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv", "Hg0DryDep")
-sv.all$D199 <- sv.all$D199[, col.order]
-sv.all$D200 <- sv.all$D200[, col.order]
-sv.all$D202 <- sv.all$D202[, col.order]
+
+# Mean absolute shap values by predictor for each isotope and overall
+m199all <- colMeans(abs(sv.all$D199$S))
+m200all <- colMeans(abs(sv.all$D200$S))
+m202all <- colMeans(abs(sv.all$D202$S))
+
+# tab_by_response <- bind_rows(
+#   tibble(predictor = names(m199), response = "D199", mean_abs_shap = as.numeric(m199)),
+#   tibble(predictor = names(m200), response = "D200", mean_abs_shap = as.numeric(m200)),
+#   tibble(predictor = names(m202), response = "D202", mean_abs_shap = as.numeric(m202))
+# )
+
+mean_abs_across_all <- (m199all + m200all + m202all) / 3
+mean_abs_across_all <- sort(mean_abs_across_all, decreasing = TRUE)
+mean_abs_across_all
+
+
+
+# Reorder for plotting - by average abs shap value across isotopes
+# col.order <- c("Tmean8110Cat", "Precip8110Cat", "RunoffCat", "CompStrgthCat", "LOI_PERCENT", "SumForestCat", "PctOwWs_Mean", "Evap_Inflow_ratio", "WetLossConv", "Hg0DryDep")
+
+# Or could change this to order by D199 importance?
+col.order.all <- names(mean_abs_across_all)
+
+sv.all$D199 <- sv.all$D199[, col.order.all]
+sv.all$D200 <- sv.all$D200[, col.order.all]
+sv.all$D202 <- sv.all$D202[, col.order.all]
 
 # Possibly transform data for color scale to work better?
 hist(Train_Dat$Hg0DryDep)
@@ -180,32 +232,84 @@ sv_importance(sv.train)
 
 theme_set(theme_gray(base_size = 18))
 
-meanshap.tr <- sv_importance(sv.train, sort_features=F)
-meanshap.tr.highlow <- sv_importance(sv.train, sort_features=T)# +
-bee.tr <- sv_importance(sv.train, kind="beeswarm", sort_features=F)# +
-  # theme(text=element_text(size=20))
-
+# Bar plot of mean absolute shap value - training lakes
+meanshap.tr <- sv_importance(sv.train, sort_features=F) + # Already sorted
+  theme_bw(base_size = 20) +
+  scale_fill_manual(values = c("D199" = "black", "D200" = "gray60", "D202" = "gray80"),
+                    labels = c("D199" = expression(Delta^199 * Hg), 
+                               "D200" = expression(Delta^200 * Hg), 
+                               "D202" = expression(delta^202 * Hg))) +
+  scale_y_discrete(labels = c(
+    "RunoffCat" = "Runoff",
+    "Precip8110Cat" = "Precipitation",
+    "Hg0DryDep" = expression(paste("Hg"^"0", " dry dep.")),
+    "LOI_PERCENT" = "Sed. organic matter",
+    "PctOwWs_Mean" = "Percent open water",
+    "Evap_Inflow_ratio" = "Evap. loss:inflow",
+    "SumForestCat" = "Percent forest",
+    "CompStrgthCat" = "Compressive strength",
+    "Tmean8110Cat" = "Temperature",
+    "WetLossConv" = "Wet scav. convect. up."
+  )) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=28, family = "Calibri"))
+        # legend.title = element_text(size=80, family = "Calibri", face = "bold"),
+        # legend.key.size = unit(3, "cm"),
+        # axis.title.y = element_text(margin = margin(r = -5), family = "Calibri")) 
 meanshap.tr
 ggsave(paste0(fig_dir, "SHAP/MeanShap_TrainLakes.png"), width=10, height=6)
-meanshap.tr.highlow
-ggsave(paste0(fig_dir, "SHAP/MeanShap_TrainLakes_HighLow.png"), width=10, height=6)
 
+
+# meanshap.tr.highlow <- sv_importance(sv.train, sort_features=T)# +
+# meanshap.tr.highlow
+# ggsave(paste0(fig_dir, "SHAP/MeanShap_TrainLakes_HighLow.png"), width=10, height=6)
+
+# Bee swarm plot
+bee.tr <- sv_importance(sv.train, kind="beeswarm", sort_features=F)# +
+  # theme(text=element_text(size=20))
 bee.tr
 ggsave(paste0(fig_dir, "SHAP/Beeplot_TrainLakes.png"), width=24, height=8)
 
-# sv_dependence(sv.train, "Hg0DryDep")
+both.tr <- sv_importance(sv.train, kind="both", sort_features=F)# +
+# theme(text=element_text(size=20))
+both.tr
 
 
-# Plots for all lakes
-meanshap.all <- sv_importance(sv.all, sort_features=F)# +
-meanshap.all.highlow <- sv_importance(sv.all, sort_features=T)# +
+
+# Bar plot of mean absolute shap value - all lakes
+meanshap.all <- sv_importance(sv.all, sort_features=F)+ # Already sorted
+  theme_bw(base_size = 20) +
+  scale_fill_manual(values = c("D199" = "black", "D200" = "gray60", "D202" = "gray80"),
+                    labels = c("D199" = expression(Delta^199 * Hg), 
+                               "D200" = expression(Delta^200 * Hg), 
+                               "D202" = expression(delta^202 * Hg))) +
+  scale_y_discrete(labels = c(
+    "RunoffCat" = "Runoff",
+    "Precip8110Cat" = "Precipitation",
+    "Hg0DryDep" = expression(paste("Hg"^"0", " dry dep.")),
+    "LOI_PERCENT" = "Sed. organic matter",
+    "PctOwWs_Mean" = "Percent open water",
+    "Evap_Inflow_ratio" = "Evap. loss:inflow",
+    "SumForestCat" = "Percent forest",
+    "CompStrgthCat" = "Compressive strength",
+    "Tmean8110Cat" = "Temperature",
+    "WetLossConv" = "Wet scav. convect. up."
+  )) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=28, family = "Calibri"))
+# legend.title = element_text(size=80, family = "Calibri", face = "bold"),
+# legend.key.size = unit(3, "cm"),
+# axis.title.y = element_text(margin = margin(r = -5), family = "Calibri")) 
+meanshap.all
+ggsave(paste0(fig_dir, "SHAP/MeanShap_AllLakes.png"), width=10, height=6) # Already sorted
+
+# meanshap.all.highlow <- sv_importance(sv.all, sort_features=T)# +
+# meanshap.all.highlow
+# ggsave(paste0(fig_dir, "SHAP/MeanShap_AllLakes_HighLow.png"), width=10, height=6)
+
+
+# Bee swarm plot
 bee.all <- sv_importance(sv.all, kind="beeswarm", sort_features=F)# +
 # theme(text=element_text(size=20))
-
-meanshap.all
-ggsave(paste0(fig_dir, "SHAP/MeanShap_AllLakes.png"), width=10, height=6)
-meanshap.all.highlow
-ggsave(paste0(fig_dir, "SHAP/MeanShap_AllLakes_HighLow.png"), width=10, height=6)
-
 bee.all
 ggsave(paste0(fig_dir, "SHAP/Beeplot_AllLakes.png"), width=24, height=8)
