@@ -2344,7 +2344,7 @@ ggsave(plot=wrap.plot202, filename=paste0(fig_dir, "PDP_SKATER20/D202_All_Bivari
 
 
 
-########### NEW FIGURE 2 ###############
+########### NEW FIGURE 3 ###############
 
 #### REDUCED multi-panel figure for bivariate PDPs - D199 only for main text ####
 
@@ -2359,15 +2359,13 @@ ggsave(plot=wrap.plot202, filename=paste0(fig_dir, "PDP_SKATER20/D202_All_Bivari
 # X○ Added space between legend title and bar for D199
 # XPotentially just include the upper triangles so it’s less overwhelming.
 
-# Add univariate figs on diagonal
-# Add red/blue color for pos/neg, potentially match contour color scale
-# Axis text should match old bivariate axis
-# Remove gray box and limit to 95% range to match bivariate
-# y-axis description more informative
+# XAdd univariate figs on diagonal
+# XAdd red/blue color for pos/neg, potentially match contour color scale
+# XAxis text should match old bivariate axis
+# XRemove gray box and limit to 95% range to match bivariate
+# X y-axis description more informative
 
-# Remove LOI?
 
-# May need to add all axis labels back in because the y-axes mean different things for the diagonal univariate vs. the bivariate plots
 
 pred.order <- c("RunoffCat", "Precip8110Cat",  "Hg0DryDep", "LOI_PERCENT")
 
