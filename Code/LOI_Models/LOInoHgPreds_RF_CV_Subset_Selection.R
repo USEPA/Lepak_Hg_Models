@@ -415,8 +415,8 @@ rf.final  <- randomForest(log10LOI ~ ., data=Train_run,
                           keep.inbag = F,
                           importance=T)
 
-saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
-# rf.final <- readRDS(paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
+# saveRDS(rf.final, paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
+rf.final <- readRDS(paste0(model_dir, "rf_sd73_FINAL_SUBSET.rds"))
 
 
 # Predict test set
@@ -663,6 +663,315 @@ for (i in 1:ncol(pred_combos)){
 
 stopCluster(cl)
 
+
+
+
+
+
+
+
+
+### Updates for manuscript - just do for Precip/Ave_pH, OmCat/SumForestCat, Precip/SumForestCat ####
+
+
+final.preds
+
+# Full data
+names(Train_run)
+Test_run <- Test_Dat %>% dplyr::select(all_of(names(Train_run)))
+Full_dat <- rbind(Train_run, Test_run)
+
+
+
+### Precip and Ave_pH ####
+xvar <- "Precip8110Cat"
+yvar <- "Ave_pH"
+
+pred_lab_x <- "Precipitation"
+pred_lab_y <- "pH"
+
+pred_lab_x_file <- "Precip8110Cat"
+pred_lab_y_file <- "Ave_pH"
+
+pred_dat <- Full_dat %>% dplyr::select(paste0(xvar), paste0(yvar))
+
+lim.i <- round(quantile(pred_dat[,1], probs=c(0.025, 0.975)), 6)
+grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+names(grid.i) <- names(pred_dat)[1]
+
+lim.j <- round(quantile(pred_dat[,2], probs=c(0.025, 0.975)), 6)
+grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+names(grid.j) <- names(pred_dat)[2]
+
+grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+
+cl <- makeCluster(20) 
+doParallel::registerDoParallel(cl)
+rf.2pd1 <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+stopCluster(cl)
+
+# Transform LOI back to percentage
+rf.2pd1$yhat <- (10^rf.2pd1$yhat)*100
+range(rf.2pd1$yhat) # 13, 17
+
+
+# Plot precip-pH - VIK
+precip_pH <- rf.2pd1 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd1[xvar]), ylim=range(rf.2pd1[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  # scale_fill_continuous_sequential(name=expression(log[10]*"(HgT)"), palette = 'Mako', alpha=1, rev=F, limits=c(12,18),  p1=.9, l2 = 95) +
+  scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Vik', mid=15.5, alpha=1, rev=T, limits=c(12,19),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_pH
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_Vik.pdf"), plot=precip_pH, width=8, height=5, device = cairo_pdf)
+
+# Plot precip-pH - Green-Brown
+precip_pH <- rf.2pd1 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd1[xvar]), ylim=range(rf.2pd1[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Green-Brown', mid=15.5, alpha=1, rev=T, limits=c(12,19),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_pH
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_GreenBrown.pdf"), plot=precip_pH, width=8, height=5, device = cairo_pdf)
+
+
+# Plot precip-pH - Red-Yellow
+precip_pH <- rf.2pd1 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd1[xvar]), ylim=range(rf.2pd1[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_sequential(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Red-Yellow', alpha=1, rev=F, limits=c(12,19),  p1=.9, l2 = 95) +
+  # scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Vik', mid=15, alpha=1, rev=T, limits=c(12,18),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_pH
+# Change this path to Fig 4 path in Manuscript fig files
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_RedYellow.pdf"), plot=precip_pH, width=8, height=5, device = cairo_pdf)
+
+
+############# OmCat and SumForestCat #######
+final.preds
+xvar <- "OmCat"
+yvar <- "SumForestCat"
+
+pred_lab_x <- "Catch. organic matter"
+pred_lab_y <- "Percent forest"
+
+pred_lab_x_file <- "OmCat"
+pred_lab_y_file <- "SumForestCat"
+
+pred_dat <- Full_dat %>% dplyr::select(paste0(xvar), paste0(yvar))
+
+lim.i <- round(quantile(pred_dat[,1], probs=c(0.025, 0.975)), 6)
+grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+names(grid.i) <- names(pred_dat)[1]
+
+lim.j <- round(quantile(pred_dat[,2], probs=c(0.025, 0.975)), 6)
+grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+names(grid.j) <- names(pred_dat)[2]
+
+grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+
+cl <- makeCluster(20) 
+doParallel::registerDoParallel(cl)
+rf.2pd2 <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+stopCluster(cl)
+
+# Transform LOI back to percentage
+rf.2pd2$yhat <- (10^rf.2pd2$yhat)*100
+range(rf.2pd2$yhat) # 12, 19
+
+
+# Plot om-forest - VIK
+om_forest <- rf.2pd2 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd2[xvar]), ylim=range(rf.2pd2[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Vik', mid=15.5, alpha=1, rev=T, limits=c(12,19),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+om_forest
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_Vik.pdf"), plot=om_forest, width=8, height=5, device = cairo_pdf)
+
+# Plot om-forest - Green-Brown
+om_forest <- rf.2pd2 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd2[xvar]), ylim=range(rf.2pd2[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Green-Brown', mid=15.5, alpha=1, rev=T, limits=c(12,19),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+om_forest
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_GreenBrown.pdf"), plot=om_forest, width=8, height=5, device = cairo_pdf)
+
+
+# Plot om-forest - Red-Yellow
+om_forest <- rf.2pd2 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd2[xvar]), ylim=range(rf.2pd2[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_sequential(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Red-Yellow', alpha=1, rev=F, limits=c(12,19),  p1=.9, l2 = 95) +
+  # scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Vik', mid=15, alpha=1, rev=T, limits=c(12,18),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+om_forest
+# Change this path to Fig 4 path in Manuscript fig files
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_RedYellow.pdf"), plot=om_forest, width=8, height=5, device = cairo_pdf)
+
+
+
+############# Precip and SumForestCat #######
+final.preds
+xvar <- "Precip8110Cat"
+yvar <- "SumForestCat"
+
+pred_lab_x <- "Precipitation"
+pred_lab_y <- "Percent forest"
+
+pred_lab_x_file <- "Precip8110Cat"
+pred_lab_y_file <- "SumForestCat"
+
+pred_dat <- Full_dat %>% dplyr::select(paste0(xvar), paste0(yvar))
+
+lim.i <- round(quantile(pred_dat[,1], probs=c(0.025, 0.975)), 6)
+grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+names(grid.i) <- names(pred_dat)[1]
+
+lim.j <- round(quantile(pred_dat[,2], probs=c(0.025, 0.975)), 6)
+grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+names(grid.j) <- names(pred_dat)[2]
+
+grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+
+cl <- makeCluster(20) 
+doParallel::registerDoParallel(cl)
+rf.2pd3 <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+stopCluster(cl)
+
+# Transform LOI back to percentage
+rf.2pd3$yhat <- (10^rf.2pd3$yhat)*100
+range(rf.2pd3$yhat) # 12, 19
+
+
+# Plot precip-forest - VIK
+precip_forest <- rf.2pd3 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd3[xvar]), ylim=range(rf.2pd3[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Vik', mid=15.5, alpha=1, rev=T, limits=c(12,19),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_forest
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_Vik.pdf"), plot=precip_forest, width=8, height=5, device = cairo_pdf)
+
+# Plot precip-forest - Green-Brown
+precip_forest <- rf.2pd3 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd3[xvar]), ylim=range(rf.2pd3[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Green-Brown', mid=15.5, alpha=1, rev=T, limits=c(12,19),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_forest
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_GreenBrown.pdf"), plot=precip_forest, width=8, height=5, device = cairo_pdf)
+
+# Plot precip-forest - Red-Yellow
+precip_forest <- rf.2pd3 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd3[xvar]), ylim=range(rf.2pd3[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_sequential(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Red-Yellow', alpha=1, rev=F, limits=c(12,19),  p1=.9, l2 = 95) +
+  # scale_fill_continuous_diverging(name=expression(atop("Sed. organic", "matter (%)")), palette = 'Vik', mid=15, alpha=1, rev=T, limits=c(12,18),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_forest
+# Change this path to Fig 4 path in Manuscript fig files
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/LOI", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_RedYellow.pdf"), plot=precip_forest, width=8, height=5, device = cairo_pdf)
 
 
 

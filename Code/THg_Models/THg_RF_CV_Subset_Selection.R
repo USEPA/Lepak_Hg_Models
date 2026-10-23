@@ -622,6 +622,9 @@ for(i in 1:length(final.preds)){
 
 # Two variable partial dependence plots (contours) to visualize interactions 
 
+
+
+
 # Unique predictor combos
 pred_combos <- combn(final.preds, 2)
 
@@ -679,6 +682,140 @@ for (i in 1:ncol(pred_combos)){
 }
 
 stopCluster(cl)
+
+
+
+### Updates for manuscript - just do for Precip/Runoff and Gas_Hg_Hg0Conc_ng_m3 and LOI_PERCENT
+
+# Change to middle 95% of data, not 90%
+# Compute over full dataset (train+test)
+# Add data points
+# Increase text size
+# Z-axis uniform across rows
+# Rename axis titles
+
+final.preds
+
+# Full data
+names(Train_run)
+Test_run <- Test_Dat %>% dplyr::select(all_of(names(Train_run)))
+Full_dat <- rbind(Train_run, Test_run)
+
+# Precip and Runoff - switch for figure to be consistent with iso plots
+yvar <- "RunoffCat"
+xvar <- "Precip8110Cat"
+
+pred_lab_y <- "Runoff"
+pred_lab_x <- "Precipitation"
+
+pred_dat <- Full_dat %>% dplyr::select(paste0(xvar), paste0(yvar))
+
+lim.i <- round(quantile(pred_dat[,1], probs=c(0.025, 0.975)), 6)
+grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+names(grid.i) <- names(pred_dat)[1]
+
+lim.j <- round(quantile(pred_dat[,2], probs=c(0.025, 0.975)), 6)
+grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+names(grid.j) <- names(pred_dat)[2]
+
+grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+
+
+cl <- makeCluster(20) 
+doParallel::registerDoParallel(cl)
+rf.2pd1 <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+# range(rf.2pd$yhat)
+# Range yhat: 1.770871 1.980099
+stopCluster(cl)
+
+# Plot precip-runoff
+precip_runoff <- rf.2pd1 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd1[xvar]), ylim=range(rf.2pd1[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  # scale_fill_continuous_sequential(name=expression(log[10]*"(HgT)"), palette = 'Mako', alpha=1, rev=F, limits=c(1.5,2.15),  p1=.9, l2 = 95) +
+  scale_fill_continuous_diverging(name=expression(log[10]*"(HgT)"), palette = 'Vik', mid=1.825, alpha=1, rev=T, limits=c(1.5,2.15),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_runoff
+
+# Change this path to Fig 4 path in Manuscript fig files
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/HgT", paste0(pred_lab_x), "_", paste0(pred_lab_y),   "_PDP_Vik.pdf"), plot=precip_runoff, width=8, height=5, device = cairo_pdf)
+
+
+
+
+### LOI and Hg0 
+final.preds
+
+yvar <- "Gas_Hg_Hg0Conc_ng_m3"
+xvar <- "LOI_PERCENT"
+
+pred_lab_y <- expression(paste("Hg"^"0", " air conc."))
+pred_lab_x <- "Sed. organic matter"
+
+pred_lab_x_file <- "Sed_organic_matter"
+pred_lab_y_file <- "Hg0_air_conc"
+
+pred_dat <- Full_dat %>% dplyr::select(paste0(xvar), paste0(yvar))
+
+lim.i <- round(quantile(pred_dat[,1], probs=c(0.025, 0.975)), 6)
+grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+names(grid.i) <- names(pred_dat)[1]
+
+lim.j <- round(quantile(pred_dat[,2], probs=c(0.025, 0.975)), 6)
+grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+names(grid.j) <- names(pred_dat)[2]
+
+grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+
+
+cl <- makeCluster(20) 
+doParallel::registerDoParallel(cl)
+rf.2pd <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+# range(rf.2pd$yhat)
+# Range yhat: 1.507966 2.120605
+stopCluster(cl)
+
+# Plot loi-hg0
+loi_hg0 <- rf.2pd %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd[xvar]), ylim=range(rf.2pd[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(log[10]*"(HgT)"), palette = 'Vik', mid=1.825, alpha=1, rev=T, limits=c(1.5,2.15),  p1=.9, l2 = 95) +
+  # scale_fill_continuous_sequential(name=expression(log[10]*"(HgT)"), palette = 'Mako', alpha=1, rev=F, limits=c(1.5,2.15),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+loi_hg0
+
+# Change this path to Fig 4 path in Manuscript fig files
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/HgT", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_Vik.pdf"), plot=loi_hg0, width=8, height=5, device = cairo_pdf)
+
+# ~ Halfway point between min and max
+(1.5+2.15)/2
+
+# Or could use mean predicted value
+mean(rf.2pd1$yhat)
+mean(rf.2pd$yhat)
+
 
 
 

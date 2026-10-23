@@ -668,3 +668,209 @@ for (i in 1:ncol(pred_combos)){
 }
 
 stopCluster(cl)
+
+
+
+
+
+
+
+
+### Updates for manuscript - just do for HgT/LOI,  Precip/MinOxygen ####
+
+
+final.preds
+
+# Full data
+names(Train_run)
+Test_run <- Test_Dat %>% dplyr::select(all_of(names(Train_run)))
+Full_dat <- rbind(Train_run, Test_run)
+
+
+
+### log10THg and LOI_PERCENT ####
+xvar <- "log10THg"
+yvar <- "LOI_PERCENT"
+
+pred_lab_x <- expression(log[10]*"(HgT)")
+pred_lab_y <- "Sed. organic matter"
+
+pred_lab_x_file <- "log10THg"
+pred_lab_y_file <- "LOI_PERCENT"
+
+pred_dat <- Full_dat %>% dplyr::select(paste0(xvar), paste0(yvar))
+
+lim.i <- round(quantile(pred_dat[,1], probs=c(0.025, 0.975)), 6)
+grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+names(grid.i) <- names(pred_dat)[1]
+
+lim.j <- round(quantile(pred_dat[,2], probs=c(0.025, 0.975)), 6)
+grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+names(grid.j) <- names(pred_dat)[2]
+
+grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+
+cl <- makeCluster(20) 
+doParallel::registerDoParallel(cl)
+rf.2pd1 <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+stopCluster(cl)
+
+range(rf.2pd1$yhat) # -.6, .3
+
+# Plot HgT-LOI - VIK
+HgT_LOI <- rf.2pd1 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd1[xvar]), ylim=range(rf.2pd1[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(log[10]*"(MeHg)"), palette = 'Vik', mid=-.15, alpha=1, rev=T, limits=c(-.6,.3),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+HgT_LOI
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/MeHg", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_Vik.pdf"), plot=HgT_LOI, width=8, height=5, device = cairo_pdf)
+
+# Plot HgT-LOI - Purple-Brown
+HgT_LOI <- rf.2pd1 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd1[xvar]), ylim=range(rf.2pd1[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(log[10]*"(MeHg)"), palette = 'Purple-Brown', mid=-.15, alpha=1, rev=T, limits=c(-.6,.3),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+HgT_LOI
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/MeHg", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_PurpleBrown.pdf"), plot=HgT_LOI, width=8, height=5, device = cairo_pdf)
+
+# Plot HgT-LOI - Red-Yellow
+HgT_LOI <- rf.2pd1 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd1[xvar]), ylim=range(rf.2pd1[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_sequential(name=expression(log[10]*"(MeHg)"), palette = 'BrwnYl', alpha=1, rev=F, limits=c(-.6,.3),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+HgT_LOI
+# Change this path to Fig 4 path in Manuscript fig files
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/MeHg", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_BrwnYl.pdf"), plot=HgT_LOI, width=8, height=5, device = cairo_pdf)
+
+
+
+
+
+############# Precip and MinOxygen #######
+final.preds
+xvar <- "Precip8110Cat"
+yvar <- "Min_OXYGEN_mg_L"
+
+pred_lab_x <- "Precipitation"
+pred_lab_y <- "Min. diss. oxygen"
+
+pred_lab_x_file <- "Precip8110Cat"
+pred_lab_y_file <- "Min_OXYGEN_mg_L"
+
+pred_dat <- Full_dat %>% dplyr::select(paste0(xvar), paste0(yvar))
+
+lim.i <- round(quantile(pred_dat[,1], probs=c(0.025, 0.975)), 6)
+grid.i <- data.frame(PlaceHold=seq(lim.i[1],lim.i[2], (lim.i[2]-lim.i[1])/20))
+names(grid.i) <- names(pred_dat)[1]
+
+lim.j <- round(quantile(pred_dat[,2], probs=c(0.025, 0.975)), 6)
+grid.j <- data.frame(PlaceHold=seq(lim.j[1],lim.j[2], (lim.j[2]-lim.j[1])/20))
+names(grid.j) <- names(pred_dat)[2]
+
+grid.ij <- expand.grid(cbind(grid.i, grid.j), KEEP.OUT.ATTRS = FALSE)
+
+cl <- makeCluster(20) 
+doParallel::registerDoParallel(cl)
+rf.2pd2 <- partial(rf.final, train=Train_run, pred.var = c(paste0(xvar), paste0(yvar)),  pred.grid = grid.ij,  parallel=TRUE,  paropts=list(.packages = "randomForest"))
+stopCluster(cl)
+
+range(rf.2pd2$yhat) # 12, 19
+
+
+# Plot precip-minDO - VIK
+precip_minDO <- rf.2pd2 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd2[xvar]), ylim=range(rf.2pd2[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(log[10]*"(MeHg)"), palette = 'Vik', mid=-.15, alpha=1, rev=T, limits=c(-.6,.3),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_minDO
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/MeHg", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_Vik.pdf"), plot=precip_minDO, width=8, height=5, device = cairo_pdf)
+
+# Plot precip-minDO - Purple-Brown
+precip_minDO <- rf.2pd2 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd2[xvar]), ylim=range(rf.2pd2[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_diverging(name=expression(log[10]*"(MeHg)"), palette = 'Purple-Brown', mid=-.15, alpha=1, rev=T, limits=c(-.6,.3),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_minDO
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/MeHg", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_PurpleBrown.pdf"), plot=precip_minDO, width=8, height=5, device = cairo_pdf)
+
+# Plot precip-pH - BrwnYl
+precip_minDO <- rf.2pd2 %>%
+  ggplot(aes(x =  get(xvar), y = get(yvar),  z=yhat)) +
+  theme_minimal() +
+  coord_cartesian(xlim = range(rf.2pd2[xvar]), ylim=range(rf.2pd2[yvar]), expand=T) +
+  geom_tile(aes(fill=yhat)) +
+  geom_point(data=Full_dat, aes(x=get(xvar), y=get(yvar)), inherit.aes = F, alpha=.22, shape=16, size=1) +
+  geom_contour(color = "white") +
+  scale_fill_continuous_sequential(name=expression(log[10]*"(MeHg)"), palette = 'BrwnYl', alpha=1, rev=F, limits=c(-.6,.3),  p1=.9, l2 = 95) +
+  theme(text=element_text(size=28, family = "Calibri"),
+        legend.text = element_text(size=24, family = "Calibri"),
+        legend.title = element_text(size=28, family = "Calibri", face = "bold"),
+        legend.key.size = unit(1, "cm"),
+        axis.title.y = element_text(family = "Calibri")) +
+  xlab(pred_lab_x) +
+  ylab(pred_lab_y) 
+
+precip_minDO
+# Change this path to Fig 4 path in Manuscript fig files
+ggsave(paste0("Figures/Manuscript_Figure_Files/NEW_FIGS/FIG4_Interactions/MeHg", paste0(pred_lab_x_file), "_", paste0(pred_lab_y_file),   "_PDP_BrwnYl.pdf"), plot=precip_minDO, width=8, height=5, device = cairo_pdf)
+
